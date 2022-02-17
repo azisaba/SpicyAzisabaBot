@@ -18,6 +18,7 @@ import net.azisaba.spicyAzisabaBot.messages.CreateMessageHandler
 import net.azisaba.spicyAzisabaBot.messages.EditMessageHandler
 import net.azisaba.spicyAzisabaBot.messages.RealProblemChannelHandler
 import net.azisaba.spicyAzisabaBot.messages.StatsMessageHandler
+import net.azisaba.spicyAzisabaBot.messages.TranslateRomajiMessageHandler
 import net.azisaba.spicyAzisabaBot.messages.VoteMessageHandler
 
 private val messageHandlers = listOf(
@@ -29,6 +30,7 @@ private val messageHandlers = listOf(
     RealProblemChannelHandler,
     AddRolesMessageHandler,
     CountRoleMembersMessageHandler,
+    TranslateRomajiMessageHandler,
 )
 
 @OptIn(PrivilegedIntent::class)
