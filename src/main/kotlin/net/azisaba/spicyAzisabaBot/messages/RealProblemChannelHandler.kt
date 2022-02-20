@@ -1,11 +1,11 @@
 package net.azisaba.spicyAzisabaBot.messages
 
-import dev.kord.common.entity.Snowflake
 import dev.kord.core.entity.Message
 import dev.kord.core.entity.channel.TextChannel
+import net.azisaba.spicyAzisabaBot.util.Constant
 
 object RealProblemChannelHandler : MessageHandler {
-    override fun canProcess(message: Message): Boolean = message.channelId == Snowflake(760438206847123497L)
+    override fun canProcess(message: Message): Boolean = message.channelId == Constant.REAL_PROBLEM_CHANNEL_ID
 
     override suspend fun handle(message: Message) {
         if (message.author?.isBot != false) return

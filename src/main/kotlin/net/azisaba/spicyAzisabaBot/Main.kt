@@ -15,11 +15,14 @@ import net.azisaba.spicyAzisabaBot.messages.AddRolesMessageHandler
 import net.azisaba.spicyAzisabaBot.messages.CVEMessageHandler
 import net.azisaba.spicyAzisabaBot.messages.CountRoleMembersMessageHandler
 import net.azisaba.spicyAzisabaBot.messages.CreateMessageHandler
+import net.azisaba.spicyAzisabaBot.messages.CreateTableMessageHandler
 import net.azisaba.spicyAzisabaBot.messages.EditMessageHandler
 import net.azisaba.spicyAzisabaBot.messages.RealProblemChannelHandler
 import net.azisaba.spicyAzisabaBot.messages.StatsMessageHandler
+import net.azisaba.spicyAzisabaBot.messages.ToDBMessageHandler
 import net.azisaba.spicyAzisabaBot.messages.TranslateRomajiMessageHandler
 import net.azisaba.spicyAzisabaBot.messages.VoteMessageHandler
+import net.azisaba.spicyAzisabaBot.util.Util
 
 private val messageHandlers = listOf(
     CVEMessageHandler,
@@ -31,11 +34,17 @@ private val messageHandlers = listOf(
     AddRolesMessageHandler,
     CountRoleMembersMessageHandler,
     TranslateRomajiMessageHandler,
+    CreateTableMessageHandler,
+    ToDBMessageHandler,
 )
 
 @OptIn(PrivilegedIntent::class)
 suspend fun main() {
-    val client = Kord(System.getenv("BOT_TOKEN"))
+    Util.getEnvOrThrow("MARIADB_HOST")
+    Util.getEnvOrThrow("MARIADB_NAME")
+    Util.getEnvOrThrow("MARIADB_USERNAME")
+    Util.getEnvOrThrow("MARIADB_PASSWORD")
+    val client = Kord(Util.getEnvOrThrow("BOT_TOKEN"))
 
     client.on<MessageCreateEvent> {
         val handler = messageHandlers.findLast { it.canProcess(message) } ?: return@on

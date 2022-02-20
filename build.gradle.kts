@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "net.azisaba"
-version = "1.0.0"
+version = "1.1.0"
 
 repositories {
     mavenCentral()
@@ -16,6 +16,7 @@ dependencies {
     implementation("xyz.acrylicstyle.util:common:0.16.5")
     implementation("dev.kord:kord-core:0.8.0-M8")
     implementation("org.slf4j:slf4j-simple:1.8.0-beta4")
+    implementation("org.mariadb.jdbc:mariadb-java-client:2.7.3")
 }
 
 tasks {
