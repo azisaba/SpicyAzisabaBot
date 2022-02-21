@@ -10,6 +10,7 @@ import dev.kord.core.entity.channel.TextChannel
 import kotlinx.coroutines.flow.collect
 import net.azisaba.spicyAzisabaBot.util.Constant
 import net.azisaba.spicyAzisabaBot.util.Util
+import org.mariadb.jdbc.MariaDbBlob
 import java.net.HttpURLConnection
 import java.net.URL
 import java.time.Instant
@@ -92,11 +93,11 @@ object ToDBMessageHandler: MessageHandler {
                     error("Unexpected response code: ${conn.responseCode} (${conn.responseMessage})")
                 }
                 conn.getInputStream().use { input ->
-                    attachmentStatement.setBlob(6, input)
-                    if (conn is HttpURLConnection) conn.disconnect()
-                    attachmentStatement.executeUpdate()
-                    attachmentStatement.close()
+                    attachmentStatement.setBlob(6, MariaDbBlob(input.readBytes()))
                 }
+                if (conn is HttpURLConnection) conn.disconnect()
+                attachmentStatement.executeUpdate()
+                attachmentStatement.close()
             }
         }
         msg.edit { content = "コピーが完了しました。\nかかった時間: ${Instant.now().epochSecond - msg.timestamp.epochSeconds}秒\nメッセージ数: $collectedMessagesCount" }
