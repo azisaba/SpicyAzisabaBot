@@ -91,10 +91,12 @@ object ToDBMessageHandler: MessageHandler {
                 if (conn is HttpURLConnection && conn.responseCode != 200) {
                     error("Unexpected response code: ${conn.responseCode} (${conn.responseMessage})")
                 }
-                conn.getInputStream().use { input -> attachmentStatement.setBlob(6, input) }
-                if (conn is HttpURLConnection) conn.disconnect()
-                attachmentStatement.executeUpdate()
-                attachmentStatement.close()
+                conn.getInputStream().use { input ->
+                    attachmentStatement.setBlob(6, input)
+                    if (conn is HttpURLConnection) conn.disconnect()
+                    attachmentStatement.executeUpdate()
+                    attachmentStatement.close()
+                }
             }
         }
         msg.edit { content = "コピーが完了しました。\nかかった時間: ${Instant.now().epochSecond - msg.timestamp.epochSeconds}秒\nメッセージ数: $collectedMessagesCount" }
