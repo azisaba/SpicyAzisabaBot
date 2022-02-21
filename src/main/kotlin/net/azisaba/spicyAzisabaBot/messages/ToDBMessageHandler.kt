@@ -52,7 +52,7 @@ object ToDBMessageHandler: MessageHandler {
                 msg.edit { content = "メッセージをデータベースにコピー中...\n経過時間: ${Instant.now().epochSecond - msg.timestamp.epochSeconds}秒\nメッセージ数: $collectedMessagesCount" }
                 lastEditMessageAttempt = System.currentTimeMillis()
             }
-            val statement = connection.prepareStatement("INSERT INTO ? VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+            val statement = connection.prepareStatement("INSERT INTO `${args[2]}` VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
             val authorData = collectedMessage.data.author
             statement.setObject(1, guildId) // guild_id
             statement.setObject(2, guildName) // guild_name

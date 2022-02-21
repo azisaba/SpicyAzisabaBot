@@ -24,7 +24,7 @@ object CreateTableMessageHandler: MessageHandler {
             it.createStatement().use { statement ->
                 statement.executeUpdate(
                     """
-                    CREATE TABLE ${args[1]} (
+                    CREATE TABLE `${args[1]}` (
                         `guild_id` VARCHAR(255) NOT NULL DEFAULT "0", -- guild (server) id
                         `guild_name` VARCHAR(255) NOT NULL DEFAULT "0", -- guild (server) name
                         `channel_id` VARCHAR(255) NOT NULL DEFAULT "0", -- channel id
