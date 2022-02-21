@@ -25,7 +25,7 @@ object CreateAttachmentsTableMessageHandler: MessageHandler {
                         `url` TEXT(65535) DEFAULT NULL,
                         `proxy_url` TEXT(65535) DEFAULT NULL,
                         `spoiler` BOOLEAN NOT NULL DEFAULT FALSE,
-                        `data` BLOB DEFAULT NULL
+                        `data` LONGBLOB DEFAULT NULL
                     )
                     """.trimIndent()
                 )
