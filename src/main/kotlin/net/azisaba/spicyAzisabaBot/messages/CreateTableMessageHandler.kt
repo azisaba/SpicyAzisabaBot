@@ -33,12 +33,13 @@ object CreateTableMessageHandler: MessageHandler {
                         `author_id` VARCHAR(255) NOT NULL DEFAULT "0", -- user id of author
                         `author_name` VARCHAR(255) NOT NULL DEFAULT "Deleted User", -- "username"#0000
                         `author_discriminator` VARCHAR(16) NOT NULL DEFAULT "0000", -- username#"0000"
-                        `content` TEXT(65535) NOT NULL DEFAULT "", -- message content
-                        `edited` BOOLEAN NOT NULL DEFAULT FALSE, -- true if edited at least once [10]
+                        `message_id` VARCHAR(255) NOT NULL DEFAULT "0", -- message id
+                        `content` TEXT(65535) NOT NULL DEFAULT "", -- message content [10]
+                        `edited` BOOLEAN NOT NULL DEFAULT FALSE, -- true if edited at least once
                         `edited_timestamp` BIGINT(255) NOT NULL DEFAULT 0, -- timestamp when the message was last edited at
                         `created_timestamp` BIGINT(255) NOT NULL DEFAULT 0, -- timestamp when the message was created at
                         `is_reply` BOOLEAN NOT NULL DEFAULT FALSE, -- true if reply, false otherwise
-                        `reply_to` VARCHAR(255) DEFAULT NULL -- referenced message id [14]
+                        `reply_to` VARCHAR(255) DEFAULT NULL -- referenced message id [15]
                     )
                     """.trimIndent()
                 )
