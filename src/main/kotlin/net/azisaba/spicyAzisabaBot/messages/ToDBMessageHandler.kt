@@ -44,6 +44,8 @@ object ToDBMessageHandler: MessageHandler {
         }
         var lastEditMessageAttempt = 0L
         var collectedMessagesCount = 0L
+        var skippedFiles = 0L
+        var fetchedFiles = 0L
         val guildId = channel.guildId.toString()
         val guildName = channel.getGuild().name
         val channelIdString = channelId.toString()
@@ -52,7 +54,15 @@ object ToDBMessageHandler: MessageHandler {
         channel.messages.collect { collectedMessage ->
             collectedMessagesCount++
             if (System.currentTimeMillis() - lastEditMessageAttempt > 5000) {
-                msg.edit { content = "メッセージをデータベースにコピー中...\n経過時間: ${Instant.now().epochSecond - msg.timestamp.epochSeconds}秒\nメッセージ数: $collectedMessagesCount" }
+                msg.edit {
+                    content = """
+                        メッセージをデータベースにコピー中...
+                        経過時間: ${Instant.now().epochSecond - msg.timestamp.epochSeconds}秒
+                        メッセージ数: $collectedMessagesCount
+                        取得したファイル数: $fetchedFiles
+                        スキップしたファイル数: $skippedFiles
+                    """.trimIndent()
+                }
                 lastEditMessageAttempt = System.currentTimeMillis()
             }
             val statement = connection.prepareStatement("INSERT INTO `${args[2]}` VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
@@ -75,7 +85,11 @@ object ToDBMessageHandler: MessageHandler {
             statement.executeUpdate()
             statement.close()
             collectedMessage.attachments.forEach { attachment ->
-                if (attachment.size > 50000000) return@forEach // skip > 50 MB files
+                if (attachment.size > 50000000) {
+                    skippedFiles++
+                    return@forEach // skip > 50 MB files
+                }
+                fetchedFiles++
                 val deleteStatement = connection.prepareStatement("DELETE FROM `attachments` WHERE `attachment_id` = ?")
                 deleteStatement.setObject(1, attachment.id.toString())
                 deleteStatement.executeUpdate()
@@ -100,6 +114,14 @@ object ToDBMessageHandler: MessageHandler {
                 attachmentStatement.close()
             }
         }
-        msg.edit { content = "コピーが完了しました。\nかかった時間: ${Instant.now().epochSecond - msg.timestamp.epochSeconds}秒\nメッセージ数: $collectedMessagesCount" }
+        msg.edit {
+            content = """
+                コピーが完了しました。
+                かかった時間: ${Instant.now().epochSecond - msg.timestamp.epochSeconds}秒
+                メッセージ数: $collectedMessagesCount
+                取得したファイル数: $fetchedFiles
+                スキップしたファイル数: $skippedFiles
+            """.trimIndent()
+        }
     }
 }
