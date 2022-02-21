@@ -87,6 +87,10 @@ object ToDBMessageHandler: MessageHandler {
                 attachmentStatement.setObject(5, attachment.isSpoiler)
                 val conn = URL(attachment.url).openConnection()
                 conn.setRequestProperty("User-Agent", "SpicyAzisabaBot/main https://github.com/azisaba/SpicyAzisabaBot")
+                conn.connect()
+                if (conn is HttpURLConnection && conn.responseCode != 200) {
+                    error("Unexpected response code: ${conn.responseCode} (${conn.responseMessage})")
+                }
                 conn.getInputStream().use { input -> attachmentStatement.setBlob(6, input) }
                 if (conn is HttpURLConnection) conn.disconnect()
                 attachmentStatement.executeUpdate()
