@@ -8,7 +8,7 @@ import net.azisaba.spicyAzisabaBot.util.Util
 
 @Suppress("SqlNoDataSourceInspection")
 object CreateTableMessageHandler: MessageHandler {
-    override fun canProcess(message: Message): Boolean = message.author?.isBot != true && message.content.split(" ")[0] == "/create-db"
+    override fun canProcess(message: Message): Boolean = message.author?.isBot != true && message.content.split(" ")[0] == "/create-table"
 
     override suspend fun handle(message: Message) {
         if (message.getAuthorAsMember()?.getPermissions()?.contains(Permission.Administrator) != true &&
@@ -16,8 +16,8 @@ object CreateTableMessageHandler: MessageHandler {
             return
         }
         val args = message.content.split(" ")
-        if (message.content == "/create-db") {
-            message.reply { content = "`/create-db <テーブル名>`" }
+        if (message.content == "/create-table") {
+            message.reply { content = "`/create-table <テーブル名>`" }
             return
         }
         Util.getConnection().use {
