@@ -11,10 +11,8 @@ object CreateTableMessageHandler: MessageHandler {
     override fun canProcess(message: Message): Boolean = message.author?.isBot != true && message.content.split(" ")[0] == "/create-db"
 
     override suspend fun handle(message: Message) {
-        if (message.getAuthorAsMember()?.getPermissions()?.contains(Permission.Administrator) != true) {
-            return
-        }
-        if (message.getAuthorAsMember()?.roleIds?.contains(Constant.DEVELOPER_ROLE) != true) {
+        if (message.getAuthorAsMember()?.getPermissions()?.contains(Permission.Administrator) != true &&
+            message.getAuthorAsMember()?.roleIds?.contains(Constant.DEVELOPER_ROLE) != true) {
             return
         }
         val args = message.content.split("\n")
