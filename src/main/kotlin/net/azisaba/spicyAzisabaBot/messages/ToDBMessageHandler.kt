@@ -22,7 +22,7 @@ object ToDBMessageHandler: MessageHandler {
             message.getAuthorAsMember()?.roleIds?.contains(Constant.DEVELOPER_ROLE) != true) { // and author does not have developer role (false or null)
             return
         }
-        val args = message.content.split("\n")
+        val args = message.content.split(" ")
         if (message.content == "/to-db" || args.size <= 2) {
             message.reply { content = "`/to-db <チャンネルID> <テーブル名>`" }
             return

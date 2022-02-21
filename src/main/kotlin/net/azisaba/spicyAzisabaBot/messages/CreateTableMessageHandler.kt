@@ -15,7 +15,7 @@ object CreateTableMessageHandler: MessageHandler {
             message.getAuthorAsMember()?.roleIds?.contains(Constant.DEVELOPER_ROLE) != true) {
             return
         }
-        val args = message.content.split("\n")
+        val args = message.content.split(" ")
         if (message.content == "/create-db") {
             message.reply { content = "`/create-db <テーブル名>`" }
             return
