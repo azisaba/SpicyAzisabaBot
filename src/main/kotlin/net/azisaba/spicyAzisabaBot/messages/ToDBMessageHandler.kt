@@ -10,6 +10,7 @@ import dev.kord.core.entity.channel.TextChannel
 import kotlinx.coroutines.flow.collect
 import net.azisaba.spicyAzisabaBot.util.Constant
 import net.azisaba.spicyAzisabaBot.util.Util
+import java.net.HttpURLConnection
 import java.net.URL
 import java.time.Instant
 
@@ -84,7 +85,10 @@ object ToDBMessageHandler: MessageHandler {
                 attachmentStatement.setObject(3, attachment.url)
                 attachmentStatement.setObject(4, attachment.proxyUrl)
                 attachmentStatement.setObject(5, attachment.isSpoiler)
-                URL(attachment.url).openStream().use { input -> attachmentStatement.setBlob(6, input) }
+                val conn = URL(attachment.url).openConnection()
+                conn.setRequestProperty("User-Agent", "SpicyAzisabaBot/main https://github.com/azisaba/SpicyAzisabaBot")
+                conn.getInputStream().use { input -> attachmentStatement.setBlob(6, input) }
+                if (conn is HttpURLConnection) conn.disconnect()
                 attachmentStatement.executeUpdate()
                 attachmentStatement.close()
             }
