@@ -41,6 +41,7 @@ object CopyTableMessageHandler: MessageHandler {
                                 stmt.setLong(13, rs.getLong("created_timestamp"))
                                 stmt.setBoolean(14, rs.getBoolean("is_reply"))
                                 stmt.setString(15, rs.getString("reply_to"))
+                                stmt.executeUpdate()
                             }
                     }
                 }
