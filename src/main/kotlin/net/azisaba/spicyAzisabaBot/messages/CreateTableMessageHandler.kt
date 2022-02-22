@@ -29,7 +29,7 @@ object CreateTableMessageHandler: MessageHandler {
                         `guild_name` VARCHAR(255) NOT NULL DEFAULT "0", -- guild (server) name
                         `channel_id` VARCHAR(255) NOT NULL DEFAULT "0", -- channel id
                         `channel_name` VARCHAR(255) NOT NULL DEFAULT "unknown", -- channel name
-                        `author_is_bot` VARCHAR(255) NOT NULL DEFAULT "0", -- user id of author [5]
+                        `author_is_bot` VARCHAR(255) NOT NULL DEFAULT "0", -- true if author is bot [5]
                         `author_id` VARCHAR(255) NOT NULL DEFAULT "0", -- user id of author
                         `author_name` VARCHAR(255) NOT NULL DEFAULT "Deleted User", -- "username"#0000
                         `author_discriminator` VARCHAR(16) NOT NULL DEFAULT "0000", -- username#"0000"

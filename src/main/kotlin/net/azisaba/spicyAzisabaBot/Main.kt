@@ -13,6 +13,7 @@ import dev.kord.gateway.Intents
 import dev.kord.gateway.PrivilegedIntent
 import net.azisaba.spicyAzisabaBot.messages.AddRolesMessageHandler
 import net.azisaba.spicyAzisabaBot.messages.CVEMessageHandler
+import net.azisaba.spicyAzisabaBot.messages.CopyTableMessageHandler
 import net.azisaba.spicyAzisabaBot.messages.CountRoleMembersMessageHandler
 import net.azisaba.spicyAzisabaBot.messages.CreateAttachmentsTableMessageHandler
 import net.azisaba.spicyAzisabaBot.messages.CreateMessageHandler
@@ -37,6 +38,7 @@ private val messageHandlers = listOf(
     TranslateRomajiMessageHandler,
     CreateTableMessageHandler,
     CreateAttachmentsTableMessageHandler,
+    CopyTableMessageHandler,
     ToDBMessageHandler,
 )
 
