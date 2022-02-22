@@ -23,22 +23,25 @@ object CopyTableMessageHandler: MessageHandler {
         Util.getConnection().use { connection ->
             connection.createStatement().use { statement ->
                 statement.executeQuery("SELECT * FROM `${args[1]}`").use { rs ->
-                    connection.prepareStatement("INSERT INTO `${args[2]}` VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").use { stmt ->
-                        stmt.setString(1, rs.getString("guild_id"))
-                        stmt.setString(2, rs.getString("guild_name"))
-                        stmt.setString(3, rs.getString("channel_id"))
-                        stmt.setString(4, rs.getString("channel_name"))
-                        stmt.setString(5, rs.getString("author_is_bot"))
-                        stmt.setString(6, rs.getString("author_id"))
-                        stmt.setString(7, rs.getString("author_name"))
-                        stmt.setString(8, rs.getString("author_discriminator"))
-                        stmt.setString(9, rs.getString("message_id"))
-                        stmt.setString(10, rs.getString("content"))
-                        stmt.setBoolean(11, rs.getBoolean("edited"))
-                        stmt.setLong(12, rs.getLong("edited_timestamp"))
-                        stmt.setLong(13, rs.getLong("created_timestamp"))
-                        stmt.setBoolean(14, rs.getBoolean("is_reply"))
-                        stmt.setString(15, rs.getString("reply_to"))
+                    while (rs.next()) {
+                        connection.prepareStatement("INSERT INTO `${args[2]}` VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+                            .use { stmt ->
+                                stmt.setString(1, rs.getString("guild_id"))
+                                stmt.setString(2, rs.getString("guild_name"))
+                                stmt.setString(3, rs.getString("channel_id"))
+                                stmt.setString(4, rs.getString("channel_name"))
+                                stmt.setString(5, rs.getString("author_is_bot"))
+                                stmt.setString(6, rs.getString("author_id"))
+                                stmt.setString(7, rs.getString("author_name"))
+                                stmt.setString(8, rs.getString("author_discriminator"))
+                                stmt.setString(9, rs.getString("message_id"))
+                                stmt.setString(10, rs.getString("content"))
+                                stmt.setBoolean(11, rs.getBoolean("edited"))
+                                stmt.setLong(12, rs.getLong("edited_timestamp"))
+                                stmt.setLong(13, rs.getLong("created_timestamp"))
+                                stmt.setBoolean(14, rs.getBoolean("is_reply"))
+                                stmt.setString(15, rs.getString("reply_to"))
+                            }
                     }
                 }
             }
