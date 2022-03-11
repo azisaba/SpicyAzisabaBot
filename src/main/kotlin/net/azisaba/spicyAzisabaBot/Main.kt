@@ -80,5 +80,5 @@ suspend fun main() {
         println("Logged in!")
     }
 
-    client.login { this.intents = Intents(Intent.GuildMembers, Intent.GuildMessages) }
+    client.login { this.intents = Intents(Intent.GuildMembers, Intent.GuildMessages, Intent.DirectMessages) }
 }
