@@ -4,7 +4,7 @@ import dev.kord.core.behavior.channel.createEmbed
 import dev.kord.core.entity.Message
 
 object VoteMessageHandler: MessageHandler {
-    override fun canProcess(message: Message): Boolean = message.content == "/vote"
+    override suspend fun canProcess(message: Message): Boolean = message.content == "/vote"
 
     override suspend fun handle(message: Message) {
         message.channel.createEmbed {

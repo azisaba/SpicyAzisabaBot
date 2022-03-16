@@ -8,7 +8,7 @@ import net.azisaba.spicyAzisabaBot.util.Util
 
 @Suppress("SqlNoDataSourceInspection")
 object CreateTableMessageHandler: MessageHandler {
-    override fun canProcess(message: Message): Boolean = message.author?.isBot != true && message.content.split(" ")[0] == "/create-table"
+    override suspend fun canProcess(message: Message): Boolean = message.author?.isBot != true && message.content.split(" ")[0] == "/create-table"
 
     override suspend fun handle(message: Message) {
         if (message.getAuthorAsMember()?.getPermissions()?.contains(Permission.Administrator) != true &&

@@ -8,7 +8,7 @@ import net.azisaba.spicyAzisabaBot.util.Util
 
 @Suppress("SqlNoDataSourceInspection", "SqlResolve")
 object CreateAttachmentsTableMessageHandler: MessageHandler {
-    override fun canProcess(message: Message): Boolean = message.author?.isBot != true && message.content.split(" ")[0] == "/create-attachments-table"
+    override suspend fun canProcess(message: Message): Boolean = message.author?.isBot != true && message.content.split(" ")[0] == "/create-attachments-table"
 
     override suspend fun handle(message: Message) {
         if (message.getAuthorAsMember()?.getPermissions()?.contains(Permission.Administrator) != true &&

@@ -8,13 +8,12 @@ import dev.kord.core.entity.Message
 import dev.kord.core.entity.channel.TextChannel
 
 object CreateMessageHandler: MessageHandler {
-    override fun canProcess(message: Message): Boolean = message.author?.isBot != true && message.content.split(" ")[0] == "/create-message"
+    override suspend fun canProcess(message: Message): Boolean =
+        message.author?.isBot != true &&
+                message.content.split(" ")[0] == "/create-message"
 
     override suspend fun handle(message: Message) {
         if (message.author?.isBot != false) return
-        if (message.getAuthorAsMember()?.getPermissions()?.contains(Permission.ManageMessages) != true) {
-            return
-        }
         if (message.content == "/create-message") {
             message.reply { content = "`/create-message チャンネルID(改行)内容`" }
             return
@@ -30,7 +29,7 @@ object CreateMessageHandler: MessageHandler {
             return
         }
         val channel = try {
-            message.getGuild().getChannel(channelId)
+            message.kord.getChannel(channelId) ?: throw NullPointerException()
         } catch (e: Exception) {
             message.reply { content = "チャンネルが見つかりません" }
             return
@@ -39,6 +38,13 @@ object CreateMessageHandler: MessageHandler {
             message.reply { content = "指定されたチャンネルはテキストチャンネルではありません" }
             return
         }
+        if (channel.guild.getMemberOrNull(message.author!!.id)?.getPermissions()?.contains(Permission.ManageMessages) != true) {
+            message.reply { content = "権限がありません。" }
+            return
+        }
         channel.createMessage { content = msgContent }
+        message.reply {
+            content = "メッセージを送信しました。\n```\n${msgContent}\n```"
+        }
     }
 }

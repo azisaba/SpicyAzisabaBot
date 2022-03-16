@@ -5,7 +5,7 @@ import dev.kord.core.entity.Message
 import net.azisaba.spicyAzisabaBot.util.RomajiTextReader
 
 object TranslateRomajiMessageHandler: MessageHandler {
-    override fun canProcess(message: Message): Boolean = message.author?.isBot != true && message.content.split(" ")[0] == "/translate-romaji"
+    override suspend fun canProcess(message: Message): Boolean = message.author?.isBot != true && message.content.split(" ")[0] == "/translate-romaji"
 
     override suspend fun handle(message: Message) {
         if (message.content == "/translate-romaji") {

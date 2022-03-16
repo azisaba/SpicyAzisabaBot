@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.toList
 
 object StatsMessageHandler: MessageHandler {
-    override fun canProcess(message: Message): Boolean = message.content == "/stats"
+    override suspend fun canProcess(message: Message): Boolean = message.content == "/stats" && message.getGuildOrNull() != null
 
     @OptIn(PrivilegedIntent::class)
     override suspend fun handle(message: Message) {

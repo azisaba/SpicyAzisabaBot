@@ -12,7 +12,7 @@ import net.azisaba.spicyAzisabaBot.util.getObject
 import java.io.FileNotFoundException
 
 object CVEMessageHandler: MessageHandler {
-    override fun canProcess(message: Message): Boolean = message.content.matches("^(?i)/CVE-\\d+-\\d+(/s)?$".toRegex())
+    override suspend fun canProcess(message: Message): Boolean = message.content.matches("^(?i)/CVE-\\d+-\\d+(/s)?$".toRegex())
 
     override suspend fun handle(message: Message) {
         if (message.author?.isBot != false) return

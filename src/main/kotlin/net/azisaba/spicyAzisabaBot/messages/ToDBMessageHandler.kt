@@ -17,7 +17,7 @@ import java.time.Instant
 
 @Suppress("SqlNoDataSourceInspection", "SqlResolve")
 object ToDBMessageHandler: MessageHandler {
-    override fun canProcess(message: Message): Boolean = message.author?.isBot != true && message.content.split(" ")[0] == "/to-db"
+    override suspend fun canProcess(message: Message): Boolean = message.author?.isBot != true && message.content.split(" ")[0] == "/to-db"
 
     override suspend fun handle(message: Message) {
         // return if:
