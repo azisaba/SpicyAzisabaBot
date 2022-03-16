@@ -22,7 +22,7 @@ object CopyTableMessageHandler: MessageHandler {
         }
         Util.getConnection().use { connection ->
             connection.createStatement().use { statement ->
-                statement.executeQuery("SELECT * FROM `${args[1]}`").use { rs ->
+                statement.executeQuery("SELECT * FROM ${args[1]}").use { rs ->
                     while (rs.next()) {
                         connection.prepareStatement("INSERT INTO `${args[2]}` VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
                             .use { stmt ->
