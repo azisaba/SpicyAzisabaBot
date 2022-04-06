@@ -70,9 +70,7 @@ suspend fun main() {
             ・ディスコードのニックネームにMCIDを明記する（形式はほかの運営を参考に）
             
             続いて、参加していない場合は以下のグループに参加してください。
-            https://discord.gg/FX8fdBT7A2
-            https://discord.gg/yCmRjxWtbq
-            https://discord.gg/ENn4hJKyvj
+            ${System.getenv("INVITE_LINKS")}
         """.trimIndent())
     }
 

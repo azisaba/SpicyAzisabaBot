@@ -237,6 +237,16 @@ object RomajiTextReader {
         add("mmu", "っむ")
         add("mme", "っめ")
         add("mmo", "っも")
+        add("lya", "ゃ")
+        add("lyi", "ぃ")
+        add("lyu", "ゅ")
+        add("lye", "ぇ")
+        add("lyo", "ょ")
+        add("xya", "ゃ")
+        add("xyi", "ぃ")
+        add("xyu", "ゅ")
+        add("xye", "ぇ")
+        add("xyo", "ょ")
         add("-", "ー")
         add("n", "ん") // fallback
     }
