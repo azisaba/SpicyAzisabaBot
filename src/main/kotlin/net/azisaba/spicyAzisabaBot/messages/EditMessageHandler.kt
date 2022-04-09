@@ -24,7 +24,7 @@ object EditMessageHandler: MessageHandler {
             message.reply { content = "メッセージIDが指定されていません" }
             return
         }
-        val editContent = message.content.replaceFirst("^.*\n".toRegex(), "")
+        val editContent = message.content.replaceFirst("^.*\n".toRegex(), "").replace("^```\n(.*)\n```".toRegex(), "$1")
         if (editContent.isBlank()) {
             message.reply { content = "内容が空です" }
             return
