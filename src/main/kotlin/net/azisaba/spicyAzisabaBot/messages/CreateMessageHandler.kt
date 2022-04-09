@@ -23,7 +23,7 @@ object CreateMessageHandler: MessageHandler {
             message.reply { content = "チャンネルIDか内容が指定されていません" }
             return
         }
-        val msgContent = message.content.replaceFirst("^.*\n".toRegex(), "")
+        val msgContent = message.content.replaceFirst("^.*\n".toRegex(), "").replace("^```\n(.*)\n```".toRegex(), "$1")
         if (msgContent.isBlank()) {
             message.reply { content = "内容が空です" }
             return
