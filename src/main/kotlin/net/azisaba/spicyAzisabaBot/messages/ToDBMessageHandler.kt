@@ -8,6 +8,7 @@ import dev.kord.core.behavior.reply
 import dev.kord.core.entity.Message
 import dev.kord.core.entity.channel.TextChannel
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.first
 import net.azisaba.spicyAzisabaBot.util.Constant
 import net.azisaba.spicyAzisabaBot.util.Util
 import org.mariadb.jdbc.MariaDbBlob
@@ -34,7 +35,7 @@ object ToDBMessageHandler: MessageHandler {
             ?: return message.reply { content = "チャンネルが見つかりません" }.let {}
         val channel = try {
             message.getGuild().getChannel(channelId) as? TextChannel
-                ?: return message.reply { content = "チャンネルが見つかりません" }.let {}
+                ?: message.getGuild().threads.first { it.id == channelId }
         } catch (e: Exception) {
             message.reply { content = "チャンネルが見つかりません" }
             return
