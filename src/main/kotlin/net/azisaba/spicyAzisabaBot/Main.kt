@@ -18,6 +18,7 @@ import net.azisaba.spicyAzisabaBot.messages.CountRoleMembersMessageHandler
 import net.azisaba.spicyAzisabaBot.messages.CreateAttachmentsTableMessageHandler
 import net.azisaba.spicyAzisabaBot.messages.CreateMessageHandler
 import net.azisaba.spicyAzisabaBot.messages.CreateTableMessageHandler
+import net.azisaba.spicyAzisabaBot.messages.DownloadAttachmentMessageHandler
 import net.azisaba.spicyAzisabaBot.messages.EditMessageHandler
 import net.azisaba.spicyAzisabaBot.messages.RealProblemChannelHandler
 import net.azisaba.spicyAzisabaBot.messages.StatsMessageHandler
@@ -40,6 +41,7 @@ private val messageHandlers = listOf(
     CreateAttachmentsTableMessageHandler,
     CopyTableMessageHandler,
     ToDBMessageHandler,
+    DownloadAttachmentMessageHandler,
 )
 
 @OptIn(PrivilegedIntent::class)
