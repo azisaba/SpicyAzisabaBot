@@ -139,7 +139,7 @@ object ToDBMessageHandler: MessageHandler {
             if (channel !is ThreadParentChannel) return null
             channel.activeThreads.firstOrNull { it.id == threadId }?.let { return it }
             channel.getPublicArchivedThreads().collect {
-                println("Archived thread: $it (${it.name} - ${it.id})")
+                println("Archived thread: $it (${it.name} - ${it.id}, matches: ${it.id == threadId} or ${it.id.value == threadId.value})")
             }
             channel.getPublicArchivedThreads().first { it.id == threadId }
         } catch (_: Exception) {
