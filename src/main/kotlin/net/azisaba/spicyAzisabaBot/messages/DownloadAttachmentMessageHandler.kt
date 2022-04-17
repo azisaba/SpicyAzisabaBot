@@ -11,7 +11,7 @@ import java.time.Instant
 
 @Suppress("SqlNoDataSourceInspection", "SqlResolve")
 object DownloadAttachmentMessageHandler: MessageHandler {
-    private val REGEX = "^https://(?:media|cdn)\\.discord(?:app)?\\.net/attachments/\\d+/(\\d+)/(.*)\$".toRegex()
+    private val REGEX = "^https://(?:media|cdn)\\.discord(?:app)?\\.com/attachments/\\d+/(\\d+)/(.*)\$".toRegex()
 
     override suspend fun canProcess(message: Message): Boolean =
         message.author?.isBot != true &&
@@ -26,7 +26,7 @@ object DownloadAttachmentMessageHandler: MessageHandler {
         }
         args.forEach {
             if (!it.matches(REGEX)) {
-                message.reply { content = "${it}はDiscordのURLではありません。" }
+                message.reply { content = "`${it}`はDiscordのURLではありません。" }
                 return
             }
         }
