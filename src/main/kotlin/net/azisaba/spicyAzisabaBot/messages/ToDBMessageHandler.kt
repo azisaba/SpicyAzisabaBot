@@ -138,6 +138,9 @@ object ToDBMessageHandler: MessageHandler {
             val channel = guild.getChannel(channelId)
             if (channel !is ThreadParentChannel) return null
             channel.activeThreads.firstOrNull { it.id == threadId }?.let { return it }
+            channel.getPublicArchivedThreads().collect {
+                println("Archived thread: $it (${it.name} - ${it.id})")
+            }
             channel.getPublicArchivedThreads().first { it.id == threadId }
         } catch (_: Exception) {
             null
