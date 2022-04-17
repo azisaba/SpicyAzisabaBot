@@ -10,6 +10,7 @@ import dev.kord.core.entity.Message
 import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.entity.channel.ThreadParentChannel
+import dev.kord.core.entity.channel.thread.ThreadChannel
 import dev.kord.core.firstOrNull
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
@@ -138,10 +139,13 @@ object ToDBMessageHandler: MessageHandler {
             val channel = guild.getChannel(channelId)
             if (channel !is ThreadParentChannel) return null
             channel.activeThreads.firstOrNull { it.id == threadId }?.let { return it }
+            var something: ThreadChannel? = null
             channel.getPublicArchivedThreads().collect {
-                println("Archived thread: $it (${it.name} - ${it.id}, matches: ${it.id == threadId} or ${it.id.value == threadId.value})")
+                if (it.id == threadId) {
+                    something = it
+                }
             }
-            channel.getPublicArchivedThreads().first { it.id == threadId }
+            something
         } catch (_: Exception) {
             null
         }
