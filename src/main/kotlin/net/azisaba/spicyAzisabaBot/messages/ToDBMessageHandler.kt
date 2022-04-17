@@ -3,10 +3,14 @@ package net.azisaba.spicyAzisabaBot.messages
 import dev.kord.common.entity.MessageType
 import dev.kord.common.entity.Permission
 import dev.kord.common.entity.Snowflake
+import dev.kord.core.behavior.GuildBehavior
 import dev.kord.core.behavior.edit
 import dev.kord.core.behavior.reply
 import dev.kord.core.entity.Message
+import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.core.entity.channel.TextChannel
+import dev.kord.core.entity.channel.ThreadParentChannel
+import dev.kord.core.firstOrNull
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
 import net.azisaba.spicyAzisabaBot.util.Constant
@@ -31,9 +35,10 @@ object ToDBMessageHandler: MessageHandler {
             message.reply { content = "`/to-db <チャンネルID> <テーブル名>`" }
             return
         }
+        val thread = tryGetThreadMaybe(message.getGuild(), args[1])
         val channelId = args[1].toLongOrNull()?.let { Snowflake(it) }
             ?: return message.reply { content = "チャンネルが見つかりません" }.let {}
-        val channel = try {
+        val channel = thread ?: try {
             message.getGuild().getChannel(channelId) as? TextChannel
                 ?: message.getGuild().threads.first { it.id == channelId }
         } catch (e: Exception) {
@@ -123,6 +128,19 @@ object ToDBMessageHandler: MessageHandler {
                 取得したファイル数: $fetchedFiles
                 スキップしたファイル数: $skippedFiles
             """.trimIndent()
+        }
+    }
+
+    private suspend fun tryGetThreadMaybe(guild: GuildBehavior, channelAndThread: String): GuildMessageChannel? {
+        return try {
+            val channelId = Snowflake(channelAndThread.split("#")[0].toLong())
+            val threadId = Snowflake(channelAndThread.split("#")[1].toLong())
+            val channel = guild.getChannel(channelId)
+            if (channel !is ThreadParentChannel) return null
+            channel.activeThreads.firstOrNull { it.id == threadId }?.let { return it }
+            channel.getPublicArchivedThreads().first { it.id == threadId }
+        } catch (_: Exception) {
+            null
         }
     }
 }
