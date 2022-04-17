@@ -19,7 +19,7 @@ object DownloadAttachmentMessageHandler: MessageHandler {
                         message.content.split(" ")[0] == "/download-attachments")
 
     override suspend fun handle(message: Message) {
-        val args = message.content.split(" ")
+        val args = message.content.split(" ").drop(1)
         if (message.content == "/download-attachment") {
             message.reply { content = "`/download-attachment <URL...>`" }
             return
