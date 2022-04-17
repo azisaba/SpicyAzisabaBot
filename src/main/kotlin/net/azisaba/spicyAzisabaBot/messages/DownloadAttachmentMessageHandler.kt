@@ -87,8 +87,8 @@ object DownloadAttachmentMessageHandler: MessageHandler {
                 val groups = REGEX.matchEntire(s)?.groupValues ?: error("Invalid attachment string: $s")
                 return Attachment(
                     id = groups[1].toLong(),
-                    url = groups[2],
-                    filename = groups[3],
+                    url = groups[0],
+                    filename = groups[2],
                 )
             }
         }
