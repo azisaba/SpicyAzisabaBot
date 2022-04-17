@@ -10,7 +10,6 @@ import dev.kord.core.entity.Message
 import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.entity.channel.ThreadParentChannel
-import dev.kord.core.entity.channel.thread.ThreadChannel
 import dev.kord.core.firstOrNull
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
@@ -37,9 +36,9 @@ object ToDBMessageHandler: MessageHandler {
             return
         }
         val thread = tryGetThreadMaybe(message.getGuild(), args[1])
-        val channelId = args[1].toLongOrNull()?.let { Snowflake(it) }
-            ?: return message.reply { content = "チャンネルが見つかりません" }.let {}
         val channel = thread ?: try {
+            val channelId = args[1].toLongOrNull()?.let { Snowflake(it) }
+                ?: return message.reply { content = "チャンネルが見つかりません" }.let {}
             message.getGuild().getChannel(channelId) as? TextChannel
                 ?: message.getGuild().threads.first { it.id == channelId }
         } catch (e: Exception) {
@@ -55,7 +54,7 @@ object ToDBMessageHandler: MessageHandler {
         var fetchedFiles = 0L
         val guildId = channel.guildId.toString()
         val guildName = channel.getGuild().name
-        val channelIdString = channelId.toString()
+        val channelIdString = channel.id.toString()
         val channelName = channel.name
         val connection = Util.getConnection()
         channel.messages.collect { collectedMessage ->
@@ -139,13 +138,7 @@ object ToDBMessageHandler: MessageHandler {
             val channel = guild.getChannel(channelId)
             if (channel !is ThreadParentChannel) return null
             channel.activeThreads.firstOrNull { it.id == threadId }?.let { return it }
-            var something: ThreadChannel? = null
-            channel.getPublicArchivedThreads().collect {
-                if (it.id == threadId) {
-                    something = it
-                }
-            }
-            something
+            channel.getPublicArchivedThreads().first { it.id == threadId }
         } catch (_: Exception) {
             null
         }
