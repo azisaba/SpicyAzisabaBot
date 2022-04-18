@@ -25,12 +25,12 @@ object DownloadAttachmentMessageHandler: MessageHandler {
             return
         }
         args.forEach {
-            if (!it.matches(REGEX)) {
+            if (it.isNotEmpty() && !it.matches(REGEX)) {
                 message.reply { content = "`${it}`はDiscordのURLではありません。" }
                 return
             }
         }
-        val attachments = args.map { Attachment.parse(it) }
+        val attachments = args.filter { it.isNotEmpty() }.map { Attachment.parse(it) }
         val msg = message.reply {
             content = "ファイルをダウンロード中..."
         }
