@@ -3,7 +3,7 @@ package net.azisaba.spicyAzisabaBot.messages
 import dev.kord.common.entity.MessageType
 import dev.kord.common.entity.Permission
 import dev.kord.common.entity.Snowflake
-import dev.kord.core.behavior.GuildBehavior
+import dev.kord.core.Kord
 import dev.kord.core.behavior.edit
 import dev.kord.core.behavior.reply
 import dev.kord.core.entity.Message
@@ -25,24 +25,25 @@ object ToDBMessageHandler: MessageHandler {
     override suspend fun canProcess(message: Message): Boolean = message.author?.isBot != true && message.content.split(" ")[0] == "/to-db"
 
     override suspend fun handle(message: Message) {
-        // return if:
-        if (message.getAuthorAsMember()?.getPermissions()?.contains(Permission.Administrator) != true && // author does not have administrator (false or null)
-            message.getAuthorAsMember()?.roleIds?.contains(Constant.DEVELOPER_ROLE) != true) { // and author does not have developer role (false or null)
-            return
-        }
         val args = message.content.split(" ")
         if (message.content == "/to-db" || args.size <= 2) {
             message.reply { content = "`/to-db <チャンネルID> <テーブル名>`" }
             return
         }
-        val thread = tryGetThreadMaybe(message.getGuild(), args[1])
+        val thread = tryGetThreadMaybe(message.kord, args[1])
         val channel = thread ?: try {
             val channelId = args[1].toLongOrNull()?.let { Snowflake(it) }
                 ?: return message.reply { content = "チャンネルが見つかりません" }.let {}
-            message.getGuild().getChannel(channelId) as? TextChannel
+            message.kord.getChannel(channelId) as? TextChannel
                 ?: message.getGuild().threads.first { it.id == channelId }
         } catch (e: Exception) {
             message.reply { content = "チャンネルが見つかりません" }
+            return
+        }
+        // return if:
+        val authorMember = channel.guild.getMemberOrNull(message.author!!.id)
+        if (authorMember?.getPermissions()?.contains(Permission.Administrator) != true && // author does not have administrator (false or null)
+            authorMember?.roleIds?.contains(Constant.DEVELOPER_ROLE) != true) { // and author does not have developer role (false or null)
             return
         }
         val msg = message.reply {
@@ -131,11 +132,11 @@ object ToDBMessageHandler: MessageHandler {
         }
     }
 
-    private suspend fun tryGetThreadMaybe(guild: GuildBehavior, channelAndThread: String): GuildMessageChannel? {
+    private suspend fun tryGetThreadMaybe(kord: Kord, channelAndThread: String): GuildMessageChannel? {
         return try {
             val channelId = Snowflake(channelAndThread.split("#")[0].toLong())
             val threadId = Snowflake(channelAndThread.split("#")[1].toLong())
-            val channel = guild.getChannel(channelId)
+            val channel = kord.getChannel(channelId)
             if (channel !is ThreadParentChannel) return null
             channel.activeThreads.firstOrNull { it.id == threadId }?.let { return it }
             channel.getPublicArchivedThreads().first { it.id == threadId }
