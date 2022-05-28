@@ -10,9 +10,9 @@ import dev.kord.core.entity.Message
 import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.entity.channel.ThreadParentChannel
-import dev.kord.core.firstOrNull
-import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
 import net.azisaba.spicyAzisabaBot.util.Constant
 import net.azisaba.spicyAzisabaBot.util.Util
 import org.mariadb.jdbc.MariaDbBlob
@@ -22,7 +22,7 @@ import java.time.Instant
 
 @Suppress("SqlNoDataSourceInspection", "SqlResolve")
 object ToDBMessageHandler: MessageHandler {
-    override suspend fun canProcess(message: Message): Boolean = message.author?.isBot != true && message.content.split(" ")[0] == "/to-db"
+    override suspend fun canProcess(message: Message): Boolean = message.author?.isBot == false && message.content.split(" ")[0] == "/to-db"
 
     override suspend fun handle(message: Message) {
         val args = message.content.split(" ")
@@ -138,7 +138,7 @@ object ToDBMessageHandler: MessageHandler {
             val threadId = Snowflake(channelAndThread.split("#")[1].toLong())
             val channel = kord.getChannel(channelId)
             if (channel !is ThreadParentChannel) return null
-            channel.activeThreads.firstOrNull { it.id == threadId }?.let { return it }
+            channel.activeThreads.filter { it.id == threadId }.firstOrNull()?.let { return it }
             channel.getPublicArchivedThreads().first { it.id == threadId }
         } catch (_: Exception) {
             null

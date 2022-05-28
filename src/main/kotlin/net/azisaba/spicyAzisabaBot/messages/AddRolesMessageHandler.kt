@@ -9,7 +9,7 @@ import dev.kord.gateway.PrivilegedIntent
 import kotlinx.coroutines.flow.collect
 
 object AddRolesMessageHandler : MessageHandler {
-    override suspend fun canProcess(message: Message): Boolean = message.author?.isBot != true && message.content.split(" ")[0] == "/addroles"
+    override suspend fun canProcess(message: Message): Boolean = message.author?.isBot == false && message.content.split(" ")[0] == "/addroles"
 
     @OptIn(PrivilegedIntent::class)
     override suspend fun handle(message: Message) {

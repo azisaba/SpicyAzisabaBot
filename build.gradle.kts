@@ -1,5 +1,5 @@
 plugins {
-    kotlin("jvm") version "1.6.10"
+    kotlin("jvm") version "1.6.20"
     id("com.github.johnrengelman.shadow") version "7.0.0"
 }
 
@@ -12,9 +12,10 @@ repositories {
 }
 
 dependencies {
-    implementation(kotlin("stdlib"))
+    implementation(kotlin("stdlib-jdk8"))
+    implementation("xyz.acrylicstyle.util:http:0.16.5")
     implementation("xyz.acrylicstyle.util:common:0.16.5")
-    implementation("dev.kord:kord-core:0.8.0-M8")
+    implementation("dev.kord:kord-core:0.8.0-M14")
     implementation("org.slf4j:slf4j-simple:1.8.0-beta4")
     implementation("org.mariadb.jdbc:mariadb-java-client:2.7.3")
 }

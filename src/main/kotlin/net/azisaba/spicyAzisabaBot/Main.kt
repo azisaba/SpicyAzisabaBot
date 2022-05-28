@@ -25,6 +25,7 @@ import net.azisaba.spicyAzisabaBot.messages.StatsMessageHandler
 import net.azisaba.spicyAzisabaBot.messages.ToDBMessageHandler
 import net.azisaba.spicyAzisabaBot.messages.TranslateRomajiMessageHandler
 import net.azisaba.spicyAzisabaBot.messages.VoteMessageHandler
+import net.azisaba.spicyAzisabaBot.messages.YouTubeMessageHandler
 import net.azisaba.spicyAzisabaBot.util.Util
 
 private val messageHandlers = listOf(
@@ -42,14 +43,11 @@ private val messageHandlers = listOf(
     CopyTableMessageHandler,
     ToDBMessageHandler,
     DownloadAttachmentMessageHandler,
+    YouTubeMessageHandler,
 )
 
 @OptIn(PrivilegedIntent::class)
 suspend fun main() {
-    Util.getEnvOrThrow("MARIADB_HOST")
-    Util.getEnvOrThrow("MARIADB_NAME")
-    Util.getEnvOrThrow("MARIADB_USERNAME")
-    Util.getEnvOrThrow("MARIADB_PASSWORD")
     val client = Kord(Util.getEnvOrThrow("BOT_TOKEN"))
 
     client.on<MessageCreateEvent> {
@@ -80,5 +78,14 @@ suspend fun main() {
         println("Logged in!")
     }
 
-    client.login { this.intents = Intents(Intent.GuildMembers, Intent.GuildMessages, Intent.DirectMessages) }
+    client.login {
+        this.intents = Intents(
+            Intent.GuildMembers,
+            Intent.GuildMessages,
+            Intent.DirectMessages,
+            Intent.GuildVoiceStates,
+            Intent.GuildPresences,
+            Intent.MessageContent,
+        )
+    }
 }

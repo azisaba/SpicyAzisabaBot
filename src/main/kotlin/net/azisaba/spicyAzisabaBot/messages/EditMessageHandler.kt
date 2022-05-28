@@ -9,7 +9,7 @@ import dev.kord.core.entity.channel.TextChannel
 import util.ArgumentParser
 
 object EditMessageHandler: MessageHandler {
-    override suspend fun canProcess(message: Message): Boolean = message.author?.isBot != true &&
+    override suspend fun canProcess(message: Message): Boolean = message.author?.isBot == false &&
             message.content.split(" ")[0] == "/edit"
 
     override suspend fun handle(message: Message) {
