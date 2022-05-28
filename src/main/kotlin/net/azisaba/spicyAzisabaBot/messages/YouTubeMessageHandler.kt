@@ -13,22 +13,22 @@ import util.http.RESTAPI.BodyBuilder
 
 // apparently these applications are available (or known)
 //  youtube: '880218394199220334'
-//  youtubedev: '880218832743055411'
-//  poker: '755827207812677713'
+//  // youtubedev: '880218832743055411' (probably discord dev only)
+//  poker: '755827207812677713' (18+ only)
 //  betrayal: '773336526917861400'
 //  fishing: '814288819477020702'
 //  chess: '832012774040141894'
 //  chessdev: '832012586023256104'
 //  lettertile: '879863686565621790'
 //  wordsnack: '879863976006127627'
-//  doodlecrew: '878067389634314250'
+//  // doodlecrew: '878067389634314250'
 //  awkword: '879863881349087252'
 //  spellcast: '852509694341283871'
 //  checkers: '832013003968348200'
-//  puttparty: '763133495793942528'
+//  // puttparty: '763133495793942528'
 //  sketchheads: '902271654783242291'
-//  ocho: '832025144389533716'
-//  sketchyartist: '879864070101172255'
+//  blazing8s: '832025144389533716'
+//  // sketchyartist: '879864070101172255'
 
 object YouTubeMessageHandler: MessageHandler {
     override suspend fun canProcess(message: Message): Boolean = message.getAuthorAsMember()?.isBot == false &&
@@ -70,8 +70,8 @@ object YouTubeMessageHandler: MessageHandler {
         val response = withContext(Dispatchers.IO) {
             api.call().complete()
         }
-        val code = response.response?.getString("code")
-        if (code == null) {
+        val code = response.response?.get("code")
+        if (code == null || code !is String) {
             message.channel.createEmbed {
                 color = Color(0xFF0000)
                 title = "Error"
