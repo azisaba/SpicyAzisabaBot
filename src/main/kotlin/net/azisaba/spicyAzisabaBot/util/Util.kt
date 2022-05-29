@@ -1,5 +1,6 @@
 package net.azisaba.spicyAzisabaBot.util
 
+import dev.kord.core.entity.Message
 import org.mariadb.jdbc.Driver
 import java.net.URL
 import java.sql.Connection
@@ -48,4 +49,6 @@ object Util {
 
     fun getConnection(): Connection =
         Driver().connect(generateDatabaseURL() + getProperties().toQuery(), getProperties())
+
+    fun Message.mentionsSelf(): Boolean = this.mentionedUserIds.contains(this.kord.selfId)
 }

@@ -20,6 +20,7 @@ import net.azisaba.spicyAzisabaBot.messages.CreateMessageHandler
 import net.azisaba.spicyAzisabaBot.messages.CreateTableMessageHandler
 import net.azisaba.spicyAzisabaBot.messages.DownloadAttachmentMessageHandler
 import net.azisaba.spicyAzisabaBot.messages.EditMessageHandler
+import net.azisaba.spicyAzisabaBot.messages.MArtMessageHandler
 import net.azisaba.spicyAzisabaBot.messages.RealProblemChannelHandler
 import net.azisaba.spicyAzisabaBot.messages.StatsMessageHandler
 import net.azisaba.spicyAzisabaBot.messages.ToDBMessageHandler
@@ -44,6 +45,9 @@ private val messageHandlers = listOf(
     ToDBMessageHandler,
     DownloadAttachmentMessageHandler,
     YouTubeMessageHandler,
+
+    // triggered by mentions
+    MArtMessageHandler,
 )
 
 @OptIn(PrivilegedIntent::class)

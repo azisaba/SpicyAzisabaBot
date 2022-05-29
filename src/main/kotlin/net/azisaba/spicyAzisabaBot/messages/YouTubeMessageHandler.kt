@@ -1,9 +1,12 @@
 package net.azisaba.spicyAzisabaBot.messages
 
 import dev.kord.common.Color
+import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.channel.createEmbed
 import dev.kord.core.behavior.channel.createMessage
+import dev.kord.core.behavior.reply
 import dev.kord.core.entity.Message
+import dev.kord.rest.builder.message.create.embed
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import net.azisaba.spicyAzisabaBot.util.Util
@@ -36,21 +39,30 @@ object YouTubeMessageHandler: MessageHandler {
             message.content.startsWith("/youtube "))
 
     override suspend fun handle(message: Message) {
-        val channelId = message.getAuthorAsMember()!!.getVoiceState().channelId
-        if (channelId == null) {
-            message.channel.createEmbed {
-                color = Color(0xFF0000)
-                title = "Error"
-                description = "You are not in a voice channel."
-            }
-            return
-        }
+        val channelId = message.getAuthorAsMember()?.getVoiceStateOrNull()?.channelId
+            ?: return sendNotInVCError(message)
         val args = message.content.split("\\s+".toRegex()).drop(1)
         val applicationId = if (args.isEmpty()) {
             "880218394199220334" // youtube
         } else {
             args[0]
         }
+        val code = try {
+            createInvite(channelId, applicationId)
+        } catch (e: Exception) {
+            message.channel.createEmbed {
+                color = Color(0xFF0000)
+                title = "Error"
+                description = e.message
+            }
+            return
+        }
+        message.channel.createMessage {
+            content = "https://discord.gg/$code"
+        }
+    }
+
+    suspend fun createInvite(channelId: Snowflake, applicationId: String): String {
         val json = JSONObject()
             .put("max_age", 86400)
             .put("max_uses", 0)
@@ -59,7 +71,7 @@ object YouTubeMessageHandler: MessageHandler {
             .put("temporary", false)
             .put("validate", JSONObject.NULL)
         val api = RESTAPI(
-            "https://discord.com/api/v8/channels/${channelId}/invites",
+            "https://discord.com/api/v8/channels/$channelId/invites",
             "POST",
             BodyBuilder()
                 .addRequestProperty("Content-Type", "application/json")
@@ -72,15 +84,18 @@ object YouTubeMessageHandler: MessageHandler {
         }
         val code = response.response?.get("code")
         if (code == null || code !is String) {
-            message.channel.createEmbed {
+            throw RuntimeException("Discord API returned: ${response.rawResponse}")
+        }
+        return code
+    }
+
+    suspend fun sendNotInVCError(message: Message) {
+        message.reply {
+            embed {
                 color = Color(0xFF0000)
                 title = "Error"
-                description = "Discord API returned: ${response.rawResponse}"
+                description = "You are not in a voice channel. (Please rejoin the voice channel and try again)"
             }
-            return
-        }
-        message.channel.createMessage {
-            content = "https://discord.gg/$code"
         }
     }
 }
