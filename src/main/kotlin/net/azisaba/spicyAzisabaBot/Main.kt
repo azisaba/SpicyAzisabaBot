@@ -27,6 +27,7 @@ import net.azisaba.spicyAzisabaBot.messages.ToDBMessageHandler
 import net.azisaba.spicyAzisabaBot.messages.TranslateRomajiMessageHandler
 import net.azisaba.spicyAzisabaBot.messages.VoteMessageHandler
 import net.azisaba.spicyAzisabaBot.messages.YouTubeMessageHandler
+import net.azisaba.spicyAzisabaBot.util.Constant
 import net.azisaba.spicyAzisabaBot.util.Util
 
 private val messageHandlers = listOf(
@@ -67,15 +68,15 @@ suspend fun main() {
         if (channel !is TextChannel) return@on
         if (channel.guildId != member.guildId) return@on
         channel.createMessage("""
-            ${member.mention}
-            __新人運営のやることリスト__
-            ・規約を確認して同意する https://www.azisaba.net/operating-terms-and-conditions/
-            ・ 自己紹介 でPIN留めされたテンプレート通りに自己紹介を行う。
-            ・ディスコードのニックネームにMCIDを明記する（形式はほかの運営を参考に）
-            
-            続いて、参加していない場合は以下のグループに参加してください。
-            ${System.getenv("INVITE_LINKS")}
-        """.trimIndent())
+            |${member.mention}
+            |__新人運営のやることリスト__
+            |・規約を確認して同意する https://www.azisaba.net/operating-terms-and-conditions/
+            |・<#${Constant.SELF_INTRO_CHANNEL}>でPIN留めされたテンプレート通りに自己紹介を行う。
+            |・ディスコードのニックネームにMCIDを明記する（形式はほかの運営を参考に）
+            |
+            |続いて、参加していない場合は以下のグループに参加してください。
+            |
+        """.trimMargin() + System.getenv("INVITE_LINKS"))
     }
 
     client.on<ReadyEvent> {
