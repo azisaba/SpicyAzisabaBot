@@ -6,6 +6,7 @@ import dev.kord.core.Kord
 import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.event.gateway.ReadyEvent
 import dev.kord.core.event.guild.MemberJoinEvent
+import dev.kord.core.event.guild.MemberLeaveEvent
 import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.core.on
 import dev.kord.gateway.Intent
@@ -81,6 +82,16 @@ suspend fun main() {
 
     client.on<ReadyEvent> {
         println("Logged in!")
+    }
+
+    client.on<MemberLeaveEvent> {
+        val channel = client.getChannel(Constant.LEAVE_LOG_CHANNEL) as? TextChannel
+        if (channel == null) {
+            println("Warning: Tried to get text channel ${Constant.LEAVE_LOG_CHANNEL} but the channel does not exist or is not a text channel.")
+            return@on
+        }
+        if (channel.guildId != guildId) return@on
+        channel.createMessage(":outbox_tray: `${user.tag}` (ID: ${user.id}, Is bot: ${user.isBot}, Old nickname: ${old?.nickname})")
     }
 
     client.login {
