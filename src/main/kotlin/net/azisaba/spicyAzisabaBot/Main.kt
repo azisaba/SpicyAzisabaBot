@@ -12,6 +12,8 @@ import dev.kord.core.on
 import dev.kord.gateway.Intent
 import dev.kord.gateway.Intents
 import dev.kord.gateway.PrivilegedIntent
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.toList
 import net.azisaba.spicyAzisabaBot.messages.AddRolesMessageHandler
 import net.azisaba.spicyAzisabaBot.messages.CVEMessageHandler
 import net.azisaba.spicyAzisabaBot.messages.CopyTableMessageHandler
@@ -91,7 +93,22 @@ suspend fun main() {
             return@on
         }
         if (channel.guildId != guildId) return@on
-        channel.createMessage(":outbox_tray: `${user.tag}` (ID: ${user.id}, Is bot: ${user.isBot}, Old nickname: ${old?.nickname})")
+        channel.createMessage("""
+            :outbox_tray: `${user.tag}` <@${user.id}> (ID: ${user.id}, Is bot: ${user.isBot})
+            Nickname:
+            ```
+            ${old?.nickname}
+            ```
+            
+            Roles:
+            ```
+            ${old?.roles?.toList()?.joinToString(", ") { it.name }}
+            
+            (IDs: ${old?.roleIds?.joinToString(", ")})
+            ```
+            
+            Joined at: <t:${old?.joinedAt?.epochSeconds}> <t:${old?.joinedAt?.epochSeconds}:R>
+            """.trimIndent())
     }
 
     client.login {
