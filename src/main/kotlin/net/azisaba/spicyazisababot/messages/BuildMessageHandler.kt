@@ -20,6 +20,7 @@ import org.mariadb.jdbc.MariaDbBlob
 import xyz.acrylicstyle.util.ArgumentParserBuilder
 import xyz.acrylicstyle.util.InvalidArgumentException
 import java.io.File
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
 val PULL_REQUEST_PATTERN = "^https://github\\.com/([^/]+?)/([^/]+?)/pull/(\\d+)/?\$".toRegex()
@@ -103,6 +104,7 @@ object BuildMessageHandler: MessageHandler {
         }
         val startedAt = System.currentTimeMillis()
         val completed = java.util.concurrent.atomic.AtomicBoolean()
+        val latch = CountDownLatch(1)
         try {
             Thread {
                 while (!completed.get()) {
@@ -117,9 +119,13 @@ object BuildMessageHandler: MessageHandler {
                                         trimOutput(output)
                                     }\n```"
                             }
+                            if (completed.get()) {
+                                latch.countDown()
+                            }
                         }
                     }
                 }
+                latch.countDown()
             }.start()
             val artifacts = GravenBuilderConfig()
                 .dockerHost(getEnvOrThrow("DOCKER_HOST"))
@@ -170,14 +176,12 @@ object BuildMessageHandler: MessageHandler {
                 insertBuildLog.setBlob(6, MariaDbBlob(output.toByteArray()))
                 insertBuildLog.executeUpdate()
                 insertBuildLog.close()
-                val artifactUrlsInContent = if (artifactUrls.size == 1) {
-                    "\nファイル: ${artifactUrls[0]}"
-                } else if (artifactUrls.size == 2) {
-                    "\nファイル:\n- ${artifactUrls[0]}\n- ${artifactUrls[1]}"
-                } else {
-                    ""
+                val artifactUrlsInContent = when (artifactUrls.size) {
+                    1 -> "\nファイル: ${artifactUrls[0]}"
+                    2 -> "\nファイル:\n- ${artifactUrls[0]}\n- ${artifactUrls[1]}"
+                    else -> ""
                 }
-                Thread.sleep(500) // :hourglass: might appear after the message is edited, so we sleep here
+                latch.await(10, TimeUnit.SECONDS)
                 msg.edit {
                     content = ":white_check_mark: ビルド完了\nビルドログ: $buildLogUrl$artifactUrlsInContent"
                 }
@@ -201,12 +205,16 @@ object BuildMessageHandler: MessageHandler {
                     insertBuildLog.setBlob(6, MariaDbBlob(output.toByteArray()))
                     insertBuildLog.executeUpdate()
                     insertBuildLog.close()
+                    latch.await(10, TimeUnit.SECONDS)
                     msg.edit {
                         content = ":x: ビルド失敗\n経過時間: ${(System.currentTimeMillis() - startedAt) / 1000}s\nビルドログ: $buildLogUrl"
                     }
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
+            }
+            withContext(Dispatchers.IO) {
+                latch.await(10, TimeUnit.SECONDS)
             }
             msg.edit {
                 content = ":x: ビルド失敗\n経過時間: ${(System.currentTimeMillis() - startedAt) / 1000}s"
