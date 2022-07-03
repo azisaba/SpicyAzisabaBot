@@ -2,9 +2,12 @@ package net.azisaba.spicyazisababot.util
 
 import dev.kord.core.entity.Message
 import org.mariadb.jdbc.Driver
+import xyz.acrylicstyle.util.InvalidArgumentException
 import java.net.URL
 import java.sql.Connection
 import java.util.Properties
+import kotlin.math.max
+import kotlin.math.min
 
 object Util {
     private val cache = mutableMapOf<String, Pair<Long, String>>()
@@ -45,10 +48,32 @@ object Util {
         return sb.toString()
     }
 
-    private fun generateDatabaseURL() = "jdbc:mysql://${getEnvOrThrow("MARIADB_HOST")}/${getEnvOrThrow("MARIADB_NAME")}"
+    private fun generateDatabaseURL() = "jdbc:mariadb://${getEnvOrThrow("MARIADB_HOST")}/${getEnvOrThrow("MARIADB_NAME")}"
 
     fun getConnection(): Connection =
-        Driver().connect(generateDatabaseURL() + getProperties().toQuery(), getProperties())
+        try {
+            Driver().connect(generateDatabaseURL() + getProperties().toQuery(), getProperties())
+        } catch (e: Exception) {
+            throw InvalidArgumentException("Failed to connect to database (Attempted to use url: '${generateDatabaseURL()}')", e)
+        }
 
     fun Message.mentionsSelf(): Boolean = this.mentionedUserIds.contains(this.kord.selfId)
+
+    fun InvalidArgumentException.toDiscord(): String {
+        val errorComponent = "Invalid syntax: $message"
+        val context = this.context ?: return errorComponent
+        val prev = context.peekWithAmount(-min(context.index(), 15))
+        var next = context.peekWithAmount(
+            min(
+                context.readableCharacters(),
+                max(15, length)
+            )
+        )
+        if (next.isEmpty()) {
+            next = " ".repeat(length)
+        }
+        val left = next.substring(0, length)
+        val right = next.substring(length, next.length)
+        return "$errorComponent\n${prev}__${left}__$right"
+    }
 }

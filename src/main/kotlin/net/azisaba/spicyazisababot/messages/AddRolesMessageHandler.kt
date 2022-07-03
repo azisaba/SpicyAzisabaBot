@@ -6,7 +6,6 @@ import dev.kord.core.behavior.reply
 import dev.kord.core.behavior.requestMembers
 import dev.kord.core.entity.Message
 import dev.kord.gateway.PrivilegedIntent
-import kotlinx.coroutines.flow.collect
 
 object AddRolesMessageHandler : MessageHandler {
     override suspend fun canProcess(message: Message): Boolean = message.author?.isBot == false && message.content.split(" ")[0] == "/addroles"

@@ -5,7 +5,6 @@ import dev.kord.core.behavior.channel.createEmbed
 import dev.kord.core.behavior.requestMembers
 import dev.kord.core.entity.Message
 import dev.kord.gateway.PrivilegedIntent
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.toList
 
 object StatsMessageHandler: MessageHandler {

@@ -14,6 +14,7 @@ import dev.kord.gateway.Intents
 import dev.kord.gateway.PrivilegedIntent
 import kotlinx.coroutines.flow.toList
 import net.azisaba.spicyazisababot.messages.AddRolesMessageHandler
+import net.azisaba.spicyazisababot.messages.BuildMessageHandler
 import net.azisaba.spicyazisababot.messages.CVEMessageHandler
 import net.azisaba.spicyazisababot.messages.CopyTableMessageHandler
 import net.azisaba.spicyazisababot.messages.CountRoleMembersMessageHandler
@@ -33,6 +34,7 @@ import net.azisaba.spicyazisababot.util.Constant
 import net.azisaba.spicyazisababot.util.Util
 
 private val messageHandlers = listOf(
+    BuildMessageHandler,
     CVEMessageHandler,
     VoteMessageHandler,
     StatsMessageHandler,
