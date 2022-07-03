@@ -69,10 +69,10 @@ object BuildMessageHandler: MessageHandler {
             }
         }
         if (projectType != null && args.containsArgumentKey("append-cmd")) {
-            projectType = ProjectType.withCustomCmd(*projectType.cmd.dropLast(1).toTypedArray(), projectType.cmd.last() + " " + args.getArgument("append-cmd"))
+            projectType = ProjectType.withCustomImageCmd(projectType.image, *projectType.cmd.dropLast(1).toTypedArray(), projectType.cmd.last() + " " + args.getArgument("append-cmd"))
         }
         if (projectType != null && args.containsArgumentKey("prepend-cmd")) {
-            projectType = ProjectType.withCustomCmd(*projectType.cmd.dropLast(1).toTypedArray(), args.getArgument("prepend-cmd") + " " + projectType.cmd.last())
+            projectType = ProjectType.withCustomImageCmd(projectType.image, *projectType.cmd.dropLast(1).toTypedArray(), args.getArgument("prepend-cmd") + " " + projectType.cmd.last())
         }
         val artifactExts = args.getArgument("artifact-exts")?.split(",")?.toSet() ?: setOf("jar")
         val artifactPredicate: (File) -> Boolean = { artifactExts.any { ext -> it.name.endsWith(".$ext") } }

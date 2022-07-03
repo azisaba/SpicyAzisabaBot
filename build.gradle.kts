@@ -22,9 +22,9 @@ dependencies {
     implementation("dev.kord:kord-core:0.8.0-M14")
     implementation("org.slf4j:slf4j-simple:1.8.0-beta4")
     implementation("org.mariadb.jdbc:mariadb-java-client:3.0.5")
-    implementation("com.github.AzisabaNetwork:GravenBuilder:03b6f9de92")
+    implementation("com.github.AzisabaNetwork:GravenBuilder:5e493d3123")
     implementation("org.eclipse.jgit:org.eclipse.jgit:6.2.0.202206071550-r")
-    implementation("org.kohsuke:github-api:1.302")
+    implementation("org.kohsuke:github-api:1.306")
 }
 
 tasks {
