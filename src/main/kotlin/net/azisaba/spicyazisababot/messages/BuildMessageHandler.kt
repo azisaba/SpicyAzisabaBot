@@ -85,6 +85,16 @@ object BuildMessageHandler: MessageHandler {
         }
         output = output2
         output += "[SpicyAzisabaBot] Cloned repository to ${repoDir.absolutePath}\n"
+        repoDir.listFiles().let { files ->
+            if (files?.isEmpty() != false) {
+                output += "[SpicyAzisabaBot] warning: Cloned nothing"
+            } else {
+                output += "[SpicyAzisabaBot] Repository directory structure:\n"
+                files.forEach { file ->
+                    output += " - ${file.name}${if (file.isDirectory) "/" else ""}\n"
+                }
+            }
+        }
         val msg = message.reply {
             content = ":hourglass: ビルド中... (type: `$projectType`)"
         }
@@ -213,8 +223,9 @@ object BuildMessageHandler: MessageHandler {
             if (!dir.mkdir()) {
                 error("Failed to create directory: ${dir.absolutePath}")
             }
-            output += "[SpicyAzisabaBot] Cloning repository from $githubUrl\n"
-            Git.cloneRepository().setDirectory(dir).setURI("https://github.com/$owner/$repo").call().use { git ->
+            val url = "https://github.com/$owner/$repo"
+            output += "[SpicyAzisabaBot] Cloning repository from $url\n"
+            Git.cloneRepository().setDirectory(dir).setURI(url).call().use { git ->
                 output += "[SpicyAzisabaBot] Checking out commit $commit\n"
                 git.checkout().setName(commit).call()
             }
@@ -255,8 +266,9 @@ object BuildMessageHandler: MessageHandler {
             if (!dir.mkdir()) {
                 error("Failed to create directory: ${dir.absolutePath}")
             }
-            output += "[SpicyAzisabaBot] Cloning repository from $githubUrl with branch: $branch\n"
-            Git.cloneRepository().setDirectory(dir).setURI("https://github.com/$owner/$repo").setBranch(branch).call().close()
+            val url = "https://github.com/$owner/$repo"
+            output += "[SpicyAzisabaBot] Cloning repository from $url with branch: $branch\n"
+            Git.cloneRepository().setDirectory(dir).setURI(url).setBranch(branch).call().close()
             return Pair(output, dir)
         } else if (REPO_PATTERN.matches(githubUrl)) {
             val res = REPO_PATTERN.find(githubUrl)!!
@@ -264,8 +276,9 @@ object BuildMessageHandler: MessageHandler {
             if (!dir.mkdir()) {
                 error("Failed to create directory: ${dir.absolutePath}")
             }
-            output += "[SpicyAzisabaBot] Cloning repository from $githubUrl\n"
-            Git.cloneRepository().setDirectory(dir).setURI("https://github.com/$owner/$repo").call().close()
+            val url = "https://github.com/$owner/$repo"
+            output += "[SpicyAzisabaBot] Cloning repository from $url\n"
+            Git.cloneRepository().setDirectory(dir).setURI(url).call().close()
             return Pair(output, dir)
         } else {
             error("Invalid GitHub URL: $githubUrl")
