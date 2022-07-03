@@ -55,10 +55,10 @@ object BuildMessageHandler: MessageHandler {
             return
         }
         if (args.unhandledArguments().size == 0) {
-            message.reply { content = "`/build [--project-type=gradle|maven] [--artifact-exts=comma,separated,list] <github url>`" }
+            message.reply { content = "`/build [--project-type=gradle|maven [--append-cmd=]] [--artifact-exts=comma,separated,list] <github url>`" }
             return
         }
-        val projectType = args.getArgument("project-type")?.let {
+        var projectType = args.getArgument("project-type")?.let {
             if (it.equals("gradle", true)) {
                 ProjectType.GRADLE
             } else if (it.equals("maven", true)) {
@@ -66,6 +66,9 @@ object BuildMessageHandler: MessageHandler {
             } else {
                 null
             }
+        }
+        if (projectType != null && args.containsArgumentKey("append-cmd")) {
+            projectType = ProjectType.withCustomCmd(*projectType.cmd.dropLast(1).toTypedArray(), projectType.cmd.last() + " " + args.getArgument("append-cmd"))
         }
         val artifactExts = args.getArgument("artifact-exts")?.split(",")?.toSet() ?: setOf("jar")
         val artifactPredicate: (File) -> Boolean = { artifactExts.any { ext -> it.name.endsWith(".$ext") } }
