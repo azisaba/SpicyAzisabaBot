@@ -55,7 +55,7 @@ object BuildMessageHandler: MessageHandler {
             return
         }
         if (args.unhandledArguments().size == 0) {
-            message.reply { content = "`/build [--project-type=gradle|maven [--append-cmd=]] [--artifact-exts=comma,separated,list] <github url>`" }
+            message.reply { content = "`/build [--project-type=gradle|maven [--prepend-cmd=] [--append-cmd=]] [--artifact-exts=comma,separated,list] <github url>`" }
             return
         }
         var projectType = args.getArgument("project-type")?.let {
@@ -69,6 +69,9 @@ object BuildMessageHandler: MessageHandler {
         }
         if (projectType != null && args.containsArgumentKey("append-cmd")) {
             projectType = ProjectType.withCustomCmd(*projectType.cmd.dropLast(1).toTypedArray(), projectType.cmd.last() + " " + args.getArgument("append-cmd"))
+        }
+        if (projectType != null && args.containsArgumentKey("prepend-cmd")) {
+            projectType = ProjectType.withCustomCmd(*projectType.cmd.dropLast(1).toTypedArray(), args.getArgument("prepend-cmd") + " " + projectType.cmd.last())
         }
         val artifactExts = args.getArgument("artifact-exts")?.split(",")?.toSet() ?: setOf("jar")
         val artifactPredicate: (File) -> Boolean = { artifactExts.any { ext -> it.name.endsWith(".$ext") } }
@@ -174,6 +177,7 @@ object BuildMessageHandler: MessageHandler {
                 } else {
                     ""
                 }
+                Thread.sleep(500) // :hourglass: might appear after the message is edited, so we sleep here
                 msg.edit {
                     content = ":white_check_mark: ビルド完了\nビルドログ: $buildLogUrl$artifactUrlsInContent"
                 }
