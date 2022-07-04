@@ -20,6 +20,7 @@ import org.mariadb.jdbc.MariaDbBlob
 import xyz.acrylicstyle.util.ArgumentParserBuilder
 import xyz.acrylicstyle.util.InvalidArgumentException
 import java.io.File
+import java.nio.file.FileSystems
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
@@ -47,7 +48,6 @@ object BuildMessageHandler: MessageHandler {
         getEnvOrThrow("MARIADB_PASSWORD")
         val args = try {
             ArgumentParserBuilder.builder()
-                .literalBackslash()
                 .parseOptionsWithoutDash()
                 .create()
                 .parse(message.content.split(" ").drop(1).joinToString(" "))
@@ -56,7 +56,7 @@ object BuildMessageHandler: MessageHandler {
             return
         }
         if (args.unhandledArguments().size == 0) {
-            message.reply { content = "`/build [--project-type=gradle|maven [--prepend-cmd=] [--append-cmd=]] [--artifact-exts=comma,separated,list] <github url>`" }
+            message.reply { content = "`/build [--project-type=gradle|maven [--prepend-cmd=] [--append-cmd=]] [--artifact-glob=**.jar] <github url>`" }
             return
         }
         var projectType = args.getArgument("project-type")?.let {
@@ -74,11 +74,10 @@ object BuildMessageHandler: MessageHandler {
         if (projectType != null && args.containsArgumentKey("prepend-cmd")) {
             projectType = ProjectType.withCustomImageCmd(projectType.image, *projectType.cmd.dropLast(1).toTypedArray(), args.getArgument("prepend-cmd") + " " + projectType.cmd.last())
         }
-        val artifactExts = args.getArgument("artifact-exts")?.split(",")?.toSet() ?: setOf("jar")
-        val artifactPredicate: (File) -> Boolean = { artifactExts.any { ext -> it.name.endsWith(".$ext") } }
+        val artifactGlob = args.getArgument("artifact-glob") ?: "**.jar"
         var output = ""
         output += "[SpicyAzisabaBot] Project type override: $projectType\n"
-        output += "[SpicyAzisabaBot] Artifact extensions: ${artifactExts.joinToString(", ")}\n"
+        output += "[SpicyAzisabaBot] Artifact glob: $artifactGlob\n"
         output += "[SpicyAzisabaBot] URL: ${args.unhandledArguments()[0]}\n"
         val (output2, repoDir) = try {
             cloneRepository(output, args.unhandledArguments()[0])
@@ -89,6 +88,9 @@ object BuildMessageHandler: MessageHandler {
         }
         output = output2
         output += "[SpicyAzisabaBot] Cloned repository to ${repoDir.absolutePath}\n"
+        val matcher = FileSystems.getDefault().getPathMatcher("glob:$artifactGlob")
+        val repoPath = repoDir.toPath()
+        val artifactPredicate: (File) -> Boolean = { matcher.matches(repoPath.relativize(it.toPath())) }
         repoDir.listFiles().let { files ->
             if (files?.isEmpty() != false) {
                 output += "[SpicyAzisabaBot] warning: Cloned nothing"
@@ -206,6 +208,7 @@ object BuildMessageHandler: MessageHandler {
                     insertBuildLog.executeUpdate()
                     insertBuildLog.close()
                     latch.await(10, TimeUnit.SECONDS)
+                    Thread.sleep(1000)
                     msg.edit {
                         content = ":x: ビルド失敗\n経過時間: ${(System.currentTimeMillis() - startedAt) / 1000}s\nビルドログ: $buildLogUrl"
                     }
