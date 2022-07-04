@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit
 val PULL_REQUEST_PATTERN = "^https://github\\.com/([^/]+?)/([^/]+?)/pull/(\\d+)/?\$".toRegex()
 val PULL_COMMIT_PATTERN = "^https://github\\.com/([^/]+?)/([^/]+?)/pull/(\\d+)/commits/([a-zA-Z\\d]+)/?\$".toRegex()
 val COMMIT_PATTERN = "^https://github\\.com/([^/]+?)/([^/]+?)/commit/([a-zA-Z\\d]+)/?\$".toRegex()
-val REPO_WITH_BRANCH_PATTERN = "^https://github\\.com/([^/]+?)/([^/]+?)/tree/([^/]+?)/?\$".toRegex()
+val REPO_WITH_BRANCH_PATTERN = "^https://github\\.com/([^/]+?)/([^/]+?)/tree/(.+?)/?\$".toRegex()
 val REPO_PATTERN = "^https://github\\.com/([^/]+?)/([^/]+?)/?\$".toRegex()
 
 @Suppress("SqlNoDataSourceInspection")
