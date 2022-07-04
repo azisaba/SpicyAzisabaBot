@@ -56,7 +56,7 @@ object BuildMessageHandler: MessageHandler {
             return
         }
         if (args.unhandledArguments().size == 0) {
-            message.reply { content = "`/build [--project-type=gradle|maven [--prepend-cmd=] [--append-cmd=]] [--artifact-glob=**.jar] <github url>`" }
+            message.reply { content = "`/build [--project-type=gradle|maven [--prepend-cmd=] [--append-cmd=]] [--artifact-glob=**.jar] [--timeout=N_in_minutes] <github url>`" }
             return
         }
         var projectType = args.getArgument("project-type")?.let {
@@ -75,10 +75,12 @@ object BuildMessageHandler: MessageHandler {
             projectType = ProjectType.withCustomImageCmd(projectType.image, *projectType.cmd.dropLast(1).toTypedArray(), args.getArgument("prepend-cmd") + " " + projectType.cmd.last())
         }
         val artifactGlob = args.getArgument("artifact-glob") ?: "**.jar"
+        val timeout = args.getArgument("timeout")?.toLongOrNull() ?: 10L
         var output = ""
         output += "[SpicyAzisabaBot] Project type override: $projectType\n"
         output += "[SpicyAzisabaBot] Artifact glob: $artifactGlob\n"
         output += "[SpicyAzisabaBot] URL: ${args.unhandledArguments()[0]}\n"
+        output += "[SpicyAzisabaBot] Timeout: $timeout minutes\n"
         val (output2, repoDir) = try {
             cloneRepository(output, args.unhandledArguments()[0])
         } catch (e: Exception) {
@@ -134,7 +136,7 @@ object BuildMessageHandler: MessageHandler {
                 .onStdout { output += "$it\n" }
                 .onStderr { output += "$it\n" }
                 .onDebug { output += "[GravenBuilder] $it\n" }
-                .timeout(10, TimeUnit.MINUTES)
+                .timeout(timeout, TimeUnit.MINUTES)
                 .isArtifact(artifactPredicate)
                 .let { GravenBuilder(it) }
                 .buildOn(repoDir, 17, projectType)
