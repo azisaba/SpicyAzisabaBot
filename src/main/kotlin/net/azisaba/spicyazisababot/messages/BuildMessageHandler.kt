@@ -56,7 +56,19 @@ object BuildMessageHandler: MessageHandler {
             return
         }
         if (args.unhandledArguments().size == 0) {
-            message.reply { content = "`/build [--project-type=gradle|maven [--prepend-cmd=] [--append-cmd=]] [--artifact-glob=**.jar] [--timeout=N_in_minutes] <github url>`" }
+            message.reply { content = "`/build [<--image= --cmd=> or <--project-type=gradle|maven [--prepend-cmd=] [--append-cmd=]>] [--artifact-glob=**.jar] [--timeout=N_in_minutes] <github url>`" }
+            return
+        }
+        if (args.containsArgumentKey("image") && !args.containsArgumentKey("cmd")) {
+            message.reply { content = "`--cmd` is required when `--image` is specified." }
+            return
+        }
+        if (args.containsArgumentKey("cmd") && !args.containsArgumentKey("image")) {
+            message.reply { content = "`--image` is required when `--cmd` is specified." }
+            return
+        }
+        if (args.containsArgumentKey("project-type") && args.containsArgumentKey("image")) {
+            message.reply { content = "`--project-type` and `--image` are exclusive." }
             return
         }
         var projectType = args.getArgument("project-type")?.let {
@@ -65,7 +77,8 @@ object BuildMessageHandler: MessageHandler {
             } else if (it.equals("maven", true)) {
                 ProjectType.MAVEN
             } else {
-                null
+                message.reply { content = "Invalid `project-type` argument: `$it`" }
+                return
             }
         }
         if (projectType != null && args.containsArgumentKey("append-cmd")) {
@@ -73,6 +86,9 @@ object BuildMessageHandler: MessageHandler {
         }
         if (projectType != null && args.containsArgumentKey("prepend-cmd")) {
             projectType = ProjectType.withCustomImageCmd(projectType.image, *projectType.cmd.dropLast(1).toTypedArray(), args.getArgument("prepend-cmd") + " " + projectType.cmd.last())
+        }
+        if (args.containsArgumentKey("image")) {
+            projectType = ProjectType.withCustomImageCmd(args.getArgument("image")!!, "bash", "-c", args.getArgument("cmd")!!)
         }
         val artifactGlob = args.getArgument("artifact-glob") ?: "**.jar"
         val timeout = args.getArgument("timeout")?.toLongOrNull() ?: 10L
