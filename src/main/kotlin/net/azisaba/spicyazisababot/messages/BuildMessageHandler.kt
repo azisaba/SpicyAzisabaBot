@@ -202,7 +202,8 @@ object BuildMessageHandler: MessageHandler {
                     else -> ""
                 }
                 latch.await(10, TimeUnit.SECONDS)
-                msg.edit {
+                msg.delete()
+                message.reply {
                     content = ":white_check_mark: ビルド完了\nビルドログ: $buildLogUrl$artifactUrlsInContent"
                 }
             }
@@ -226,8 +227,8 @@ object BuildMessageHandler: MessageHandler {
                     insertBuildLog.executeUpdate()
                     insertBuildLog.close()
                     latch.await(10, TimeUnit.SECONDS)
-                    Thread.sleep(1000)
-                    msg.edit {
+                    msg.delete()
+                    message.reply {
                         content = ":x: ビルド失敗\n経過時間: ${(System.currentTimeMillis() - startedAt) / 1000}s\nビルドログ: $buildLogUrl"
                     }
                 }
@@ -237,7 +238,8 @@ object BuildMessageHandler: MessageHandler {
             withContext(Dispatchers.IO) {
                 latch.await(10, TimeUnit.SECONDS)
             }
-            msg.edit {
+            msg.delete()
+            message.reply {
                 content = ":x: ビルド失敗\n経過時間: ${(System.currentTimeMillis() - startedAt) / 1000}s"
             }
         } finally {
