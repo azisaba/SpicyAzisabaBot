@@ -35,7 +35,7 @@ object ToDBMessageHandler: MessageHandler {
             val channelId = args[1].toLongOrNull()?.let { Snowflake(it) }
                 ?: return message.reply { content = "チャンネルが見つかりません" }.let {}
             message.kord.getChannel(channelId) as? TextChannel
-                ?: message.getGuild().threads.first { it.id == channelId }
+                ?: message.getGuild().cachedThreads.first { it.id == channelId }
         } catch (e: Exception) {
             message.reply { content = "チャンネルが見つかりません" }
             return

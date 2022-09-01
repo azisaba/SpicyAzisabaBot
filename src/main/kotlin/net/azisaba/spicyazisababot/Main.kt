@@ -7,17 +7,25 @@ import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.event.gateway.ReadyEvent
 import dev.kord.core.event.guild.MemberJoinEvent
 import dev.kord.core.event.guild.MemberLeaveEvent
+import dev.kord.core.event.interaction.ApplicationCommandInteractionCreateEvent
+import dev.kord.core.event.interaction.ModalSubmitInteractionCreateEvent
 import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.core.on
 import dev.kord.gateway.Intent
 import dev.kord.gateway.Intents
 import dev.kord.gateway.PrivilegedIntent
 import kotlinx.coroutines.flow.toList
+import net.azisaba.spicyazisababot.commands.BuildCommand
+import net.azisaba.spicyazisababot.commands.CountRoleMembersCommand
+import net.azisaba.spicyazisababot.commands.CustomBuildCommand
+import net.azisaba.spicyazisababot.commands.PermissionsCommand
+import net.azisaba.spicyazisababot.commands.StatsCommand
+import net.azisaba.spicyazisababot.commands.TranslateRomajiCommand
+import net.azisaba.spicyazisababot.commands.VoteCommand
+import net.azisaba.spicyazisababot.commands.YouTubeCommand
 import net.azisaba.spicyazisababot.messages.AddRolesMessageHandler
-import net.azisaba.spicyazisababot.messages.BuildMessageHandler
 import net.azisaba.spicyazisababot.messages.CVEMessageHandler
 import net.azisaba.spicyazisababot.messages.CopyTableMessageHandler
-import net.azisaba.spicyazisababot.messages.CountRoleMembersMessageHandler
 import net.azisaba.spicyazisababot.messages.CreateAttachmentsTableMessageHandler
 import net.azisaba.spicyazisababot.messages.CreateMessageHandler
 import net.azisaba.spicyazisababot.messages.CreateTableMessageHandler
@@ -25,31 +33,21 @@ import net.azisaba.spicyazisababot.messages.DownloadAttachmentMessageHandler
 import net.azisaba.spicyazisababot.messages.EditMessageHandler
 import net.azisaba.spicyazisababot.messages.MArtMessageHandler
 import net.azisaba.spicyazisababot.messages.RealProblemChannelHandler
-import net.azisaba.spicyazisababot.messages.StatsMessageHandler
 import net.azisaba.spicyazisababot.messages.ToDBMessageHandler
-import net.azisaba.spicyazisababot.messages.TranslateRomajiMessageHandler
-import net.azisaba.spicyazisababot.messages.VoteMessageHandler
-import net.azisaba.spicyazisababot.messages.YouTubeMessageHandler
 import net.azisaba.spicyazisababot.util.Constant
 import net.azisaba.spicyazisababot.util.Util
 
 private val messageHandlers = listOf(
-    BuildMessageHandler,
     CVEMessageHandler,
-    VoteMessageHandler,
-    StatsMessageHandler,
     CreateMessageHandler,
     EditMessageHandler,
     RealProblemChannelHandler,
     AddRolesMessageHandler,
-    CountRoleMembersMessageHandler,
-    TranslateRomajiMessageHandler,
     CreateTableMessageHandler,
     CreateAttachmentsTableMessageHandler,
     CopyTableMessageHandler,
     ToDBMessageHandler,
     DownloadAttachmentMessageHandler,
-    YouTubeMessageHandler,
 
     // triggered by mentions
     MArtMessageHandler,
@@ -58,6 +56,33 @@ private val messageHandlers = listOf(
 @OptIn(PrivilegedIntent::class)
 suspend fun main() {
     val client = Kord(Util.getEnvOrThrow("BOT_TOKEN"))
+
+    client.createGlobalApplicationCommands {
+        StatsCommand.register(this)
+        YouTubeCommand.register(this)
+        VoteCommand.register(this)
+        TranslateRomajiCommand.register(this)
+        CountRoleMembersCommand.register(this)
+        PermissionsCommand.register(this)
+        BuildCommand.register(this)
+        CustomBuildCommand.register(this)
+    }
+
+    client.on<ApplicationCommandInteractionCreateEvent> {
+        if (interaction.user.isBot) return@on
+        if (interaction.invokedCommandName == "stats") StatsCommand.handle(interaction)
+        if (interaction.invokedCommandName == "youtube") YouTubeCommand.handle(interaction)
+        if (interaction.invokedCommandName == "vote") VoteCommand.handle(interaction)
+        if (interaction.invokedCommandName == "translate-romaji") TranslateRomajiCommand.handle(interaction)
+        if (interaction.invokedCommandName == "countrolemembers") CountRoleMembersCommand.handle(interaction)
+        if (interaction.invokedCommandName == "permissions") PermissionsCommand.handle(interaction)
+        if (interaction.invokedCommandName == "build") BuildCommand.handle(interaction)
+        if (interaction.invokedCommandName == "custom-build") CustomBuildCommand.handle(interaction)
+    }
+
+    client.on<ModalSubmitInteractionCreateEvent> {
+        this.interaction.modalId
+    }
 
     client.on<MessageCreateEvent> {
         val handler = messageHandlers.findLast { it.canProcess(message) } ?: return@on

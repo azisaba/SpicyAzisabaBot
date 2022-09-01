@@ -1,106 +1,113 @@
-package net.azisaba.spicyazisababot.messages
+package net.azisaba.spicyazisababot.commands
 
-import dev.kord.common.entity.Permission
-import dev.kord.core.behavior.edit
-import dev.kord.core.behavior.reply
-import dev.kord.core.entity.Message
+import dev.kord.common.entity.Permissions
+import dev.kord.core.behavior.channel.createMessage
+import dev.kord.core.behavior.interaction.respondPublic
+import dev.kord.core.behavior.interaction.response.edit
+import dev.kord.core.entity.interaction.ApplicationCommandInteraction
+import dev.kord.core.kordLogger
+import dev.kord.rest.builder.interaction.GlobalMultiApplicationCommandBuilder
+import dev.kord.rest.builder.interaction.int
+import dev.kord.rest.builder.interaction.string
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import net.azisaba.gravenbuilder.GravenBuilder
 import net.azisaba.gravenbuilder.GravenBuilderConfig
 import net.azisaba.gravenbuilder.ProjectType
-import net.azisaba.spicyazisababot.util.Constant
 import net.azisaba.spicyazisababot.util.Util
-import net.azisaba.spicyazisababot.util.Util.getEnvOrThrow
-import net.azisaba.spicyazisababot.util.Util.toDiscord
+import net.azisaba.spicyazisababot.util.Util.optLong
+import net.azisaba.spicyazisababot.util.Util.optString
 import org.eclipse.jgit.api.Git
 import org.kohsuke.github.GitHub
 import org.mariadb.jdbc.MariaDbBlob
-import xyz.acrylicstyle.util.ArgumentParserBuilder
-import xyz.acrylicstyle.util.InvalidArgumentException
 import java.io.File
 import java.nio.file.FileSystems
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
-val PULL_REQUEST_PATTERN = "^https://github\\.com/([^/]+?)/([^/]+?)/pull/(\\d+)/?\$".toRegex()
-val PULL_COMMIT_PATTERN = "^https://github\\.com/([^/]+?)/([^/]+?)/pull/(\\d+)/commits/([a-zA-Z\\d]+)/?\$".toRegex()
-val COMMIT_PATTERN = "^https://github\\.com/([^/]+?)/([^/]+?)/commit/([a-zA-Z\\d]+)/?\$".toRegex()
-val REPO_WITH_BRANCH_PATTERN = "^https://github\\.com/([^/]+?)/([^/]+?)/tree/(.+?)/?\$".toRegex()
-val REPO_PATTERN = "^https://github\\.com/([^/]+?)/([^/]+?)/?\$".toRegex()
-
-@Suppress("SqlNoDataSourceInspection")
-object BuildMessageHandler: MessageHandler {
+object BuildCommand : CommandHandler {
     private val counter = java.util.concurrent.atomic.AtomicLong(0)
+    private val pullRequestPattern = "^https://github\\.com/([^/]+?)/([^/]+?)/pull/(\\d+)/?\$".toRegex()
+    private val pullCommitPattern = "^https://github\\.com/([^/]+?)/([^/]+?)/pull/(\\d+)/commits/([a-zA-Z\\d]+)/?\$".toRegex()
+    private val commitPattern = "^https://github\\.com/([^/]+?)/([^/]+?)/commit/([a-zA-Z\\d]+)/?\$".toRegex()
+    private val repoWithBranchPattern = "^https://github\\.com/([^/]+?)/([^/]+?)/tree/(.+?)/?\$".toRegex()
+    private val repoPattern = "^https://github\\.com/([^/]+?)/([^/]+?)/?\$".toRegex()
 
-    override suspend fun canProcess(message: Message): Boolean =
-        !System.getenv("DOCKER_HOST").isNullOrBlank() && message.author?.isBot == false && message.content.split(" ")[0] == "/build"
+    override suspend fun canProcess(interaction: ApplicationCommandInteraction): Boolean =
+        !System.getenv("DOCKER_HOST").isNullOrBlank()
 
-    override suspend fun handle(message: Message) {
-        if (message.getAuthorAsMember()?.getPermissions()?.contains(Permission.Administrator) != true &&
-            message.getAuthorAsMember()?.roleIds?.contains(Constant.BUILDER_ROLE) != true) {
-            return
-        }
-        getEnvOrThrow("MARIADB_HOST")
-        getEnvOrThrow("MARIADB_NAME")
-        getEnvOrThrow("MARIADB_USERNAME")
-        getEnvOrThrow("MARIADB_PASSWORD")
-        val args = try {
-            ArgumentParserBuilder.builder()
-                .parseOptionsWithoutDash()
-                .create()
-                .parse(message.content.split(" ").drop(1).joinToString(" "))
-        } catch (e: InvalidArgumentException) {
-            message.reply { content = e.toDiscord() }
-            return
-        }
-        if (args.unhandledArguments().size == 0) {
-            message.reply { content = "`/build [<--image= --cmd=> or <--project-type=gradle|maven [--prepend-cmd=] [--append-cmd=]>] [--artifact-glob=**.jar] [--timeout=N_in_minutes] <github url>`" }
-            return
-        }
-        if (args.containsArgumentKey("image") && !args.containsArgumentKey("cmd")) {
-            message.reply { content = "`--cmd` is required when `--image` is specified." }
-            return
-        }
-        if (args.containsArgumentKey("cmd") && !args.containsArgumentKey("image")) {
-            message.reply { content = "`--image` is required when `--cmd` is specified." }
-            return
-        }
-        if (args.containsArgumentKey("project-type") && args.containsArgumentKey("image")) {
-            message.reply { content = "`--project-type` and `--image` are exclusive." }
-            return
-        }
-        var projectType = args.getArgument("project-type")?.let {
+    override suspend fun handle0(interaction: ApplicationCommandInteraction) {
+        val url = interaction.optString("url")!!
+        val type = interaction.optString("type")
+        val prependCmd = interaction.optString("prepend-cmd")
+        val appendCmd = interaction.optString("append-cmd")
+        val artifactGlob = interaction.optString("artifact-glob") ?: "**.jar"
+        val timeout = interaction.optLong("timeout") ?: 10
+        var projectType = type?.let {
             if (it.equals("gradle", true)) {
                 ProjectType.GRADLE
             } else if (it.equals("maven", true)) {
                 ProjectType.MAVEN
             } else {
-                message.reply { content = "Invalid `project-type` argument: `$it`" }
-                return
+                null
             }
         }
-        if (projectType != null && args.containsArgumentKey("append-cmd")) {
-            projectType = ProjectType.withCustomImageCmd(projectType.image, *projectType.cmd.dropLast(1).toTypedArray(), projectType.cmd.last() + " " + args.getArgument("append-cmd"))
+        if (projectType != null && prependCmd != null) {
+            projectType = ProjectType.withCustomImageCmd(projectType.image, *projectType.cmd.dropLast(1).toTypedArray(), prependCmd + " " + projectType.cmd.last())
         }
-        if (projectType != null && args.containsArgumentKey("prepend-cmd")) {
-            projectType = ProjectType.withCustomImageCmd(projectType.image, *projectType.cmd.dropLast(1).toTypedArray(), args.getArgument("prepend-cmd") + " " + projectType.cmd.last())
+        if (projectType != null && appendCmd != null) {
+            projectType = ProjectType.withCustomImageCmd(projectType.image, *projectType.cmd.dropLast(1).toTypedArray(), projectType.cmd.last() + " " + appendCmd)
         }
-        if (args.containsArgumentKey("image")) {
-            projectType = ProjectType.withCustomImageCmd(args.getArgument("image")!!, "bash", "-c", args.getArgument("cmd")!!)
+        build(interaction, url, projectType, artifactGlob, timeout)
+    }
+
+    override fun register(builder: GlobalMultiApplicationCommandBuilder) {
+        builder.input("build", "Builds a gradle or maven project") {
+            dmPermission = false
+            defaultMemberPermissions = Permissions()
+            string("url", "URL to download the repository") {
+                required = true
+            }
+            string("type", "Project type") {
+                required = false
+                choice("Gradle", "gradle")
+                choice("Maven", "maven")
+            }
+            string("prepend-cmd", "Command to prepend to the build command") {
+                required = false
+            }
+            string("append-cmd", "Command to append to the build command") {
+                required = false
+            }
+            string("artifact-glob", "Artifact glob (Default: **.jar)") {
+                required = false
+            }
+            int("timeout", "Timeout in minutes (Default: 10)") {
+                required = false
+                minValue = 1
+            }
         }
-        val artifactGlob = args.getArgument("artifact-glob") ?: "**.jar"
-        val timeout = args.getArgument("timeout")?.toLongOrNull() ?: 10L
+    }
+
+    suspend fun build(
+        interaction: ApplicationCommandInteraction,
+        url: String,
+        projectType: ProjectType?,
+        artifactGlob: String = "**.jar",
+        timeout: Long = 10,
+    ) {
         var output = ""
+        output += "[SpicyAzisabaBot] Build triggered by ${interaction.user.id}\n"
         output += "[SpicyAzisabaBot] Project type override: $projectType\n"
         output += "[SpicyAzisabaBot] Artifact glob: $artifactGlob\n"
-        output += "[SpicyAzisabaBot] URL: ${args.unhandledArguments()[0]}\n"
+        output += "[SpicyAzisabaBot] URL: $url\n"
         output += "[SpicyAzisabaBot] Timeout: $timeout minutes\n"
+        kordLogger.info("Initial build output:\n$output")
         val (output2, repoDir) = try {
-            cloneRepository(output, args.unhandledArguments()[0])
+            cloneRepository(output, url)
         } catch (e: Exception) {
-            message.reply { content = "Failed to clone repository: ${e.message}" }
+            interaction.respondPublic { content = "Failed to clone repository: ${e.message}" }
             e.printStackTrace()
             return
         }
@@ -119,7 +126,7 @@ object BuildMessageHandler: MessageHandler {
                 }
             }
         }
-        val msg = message.reply {
+        val msg = interaction.respondPublic {
             content = ":hourglass: ビルド中... (type: `$projectType`)"
         }
         val startedAt = System.currentTimeMillis()
@@ -148,7 +155,7 @@ object BuildMessageHandler: MessageHandler {
                 latch.countDown()
             }.start()
             val artifacts = GravenBuilderConfig()
-                .dockerHost(getEnvOrThrow("DOCKER_HOST"))
+                .dockerHost(Util.getEnvOrThrow("DOCKER_HOST"))
                 .onStdout { output += "$it\n" }
                 .onStderr { output += "$it\n" }
                 .onDebug { output += "[GravenBuilder] $it\n" }
@@ -203,8 +210,13 @@ object BuildMessageHandler: MessageHandler {
                 }
                 latch.await(10, TimeUnit.SECONDS)
                 msg.delete()
-                message.reply {
+                /*
+                msg.edit {
                     content = ":white_check_mark: ビルド完了\nビルドログ: $buildLogUrl$artifactUrlsInContent"
+                }
+                */
+                interaction.channel.createMessage {
+                    content = "<@${interaction.user.id}>\n:white_check_mark: ビルド完了\nビルドログ: $buildLogUrl$artifactUrlsInContent"
                 }
             }
         } catch (e: Exception) {
@@ -228,8 +240,13 @@ object BuildMessageHandler: MessageHandler {
                     insertBuildLog.close()
                     latch.await(10, TimeUnit.SECONDS)
                     msg.delete()
-                    message.reply {
+                    /*
+                    msg.edit {
                         content = ":x: ビルド失敗\n経過時間: ${(System.currentTimeMillis() - startedAt) / 1000}s\nビルドログ: $buildLogUrl"
+                    }
+                    */
+                    interaction.channel.createMessage {
+                        content = "<@${interaction.user.id}>\n:x: ビルド失敗\n経過時間: ${(System.currentTimeMillis() - startedAt) / 1000}s\nビルドログ: $buildLogUrl"
                     }
                 }
             } catch (e: Exception) {
@@ -239,8 +256,13 @@ object BuildMessageHandler: MessageHandler {
                 latch.await(10, TimeUnit.SECONDS)
             }
             msg.delete()
-            message.reply {
+            /*
+            msg.edit {
                 content = ":x: ビルド失敗\n経過時間: ${(System.currentTimeMillis() - startedAt) / 1000}s"
+            }
+            */
+            interaction.channel.createMessage {
+                content = "<@${interaction.user.id}>\n:x: ビルド失敗\n経過時間: ${(System.currentTimeMillis() - startedAt) / 1000}s"
             }
         } finally {
             repoDir.deleteRecursively()
@@ -252,8 +274,8 @@ object BuildMessageHandler: MessageHandler {
         var output = _output
         val tmp = System.getProperty("java.io.tmpdir")!!
         val dir = File(tmp, "gb${System.currentTimeMillis()}")
-        if (COMMIT_PATTERN.matches(githubUrl)) {
-            val res = COMMIT_PATTERN.find(githubUrl)!!
+        if (commitPattern.matches(githubUrl)) {
+            val res = commitPattern.find(githubUrl)!!
             val (_, owner, repo, commit) = res.groupValues
             if (!dir.mkdir()) {
                 error("Failed to create directory: ${dir.absolutePath}")
@@ -265,8 +287,8 @@ object BuildMessageHandler: MessageHandler {
                 git.checkout().setName(commit).call()
             }
             return Pair(output, dir)
-        } else if (PULL_REQUEST_PATTERN.matches(githubUrl)) {
-            val res = PULL_REQUEST_PATTERN.find(githubUrl)!!
+        } else if (pullRequestPattern.matches(githubUrl)) {
+            val res = pullRequestPattern.find(githubUrl)!!
             val (_, owner, repo, pullRequestS) = res.groupValues
             val pullRequest = pullRequestS.toInt()
             val head = getGitHub().getRepository("$owner/$repo").getPullRequest(pullRequest).head // base <- head
@@ -279,8 +301,8 @@ object BuildMessageHandler: MessageHandler {
             output += "[SpicyAzisabaBot] Cloning repository from $newUrl with branch: $headRef\n"
             Git.cloneRepository().setDirectory(dir).setURI(newUrl).setBranch(headRef).call().close()
             return Pair(output, dir)
-        } else if (PULL_COMMIT_PATTERN.matches(githubUrl)) {
-            val res = PULL_COMMIT_PATTERN.find(githubUrl)!!
+        } else if (pullCommitPattern.matches(githubUrl)) {
+            val res = pullCommitPattern.find(githubUrl)!!
             val (_, owner, repo, pullRequestS, commit) = res.groupValues
             val pullRequest = pullRequestS.toInt()
             val head = getGitHub().getRepository("$owner/$repo").getPullRequest(pullRequest).head // base <- head
@@ -295,8 +317,8 @@ object BuildMessageHandler: MessageHandler {
                 git.checkout().setName(commit).call()
             }
             return Pair(output, dir)
-        } else if (REPO_WITH_BRANCH_PATTERN.matches(githubUrl)) {
-            val res = REPO_WITH_BRANCH_PATTERN.find(githubUrl)!!
+        } else if (repoWithBranchPattern.matches(githubUrl)) {
+            val res = repoWithBranchPattern.find(githubUrl)!!
             val (_, owner, repo, branch) = res.groupValues
             if (!dir.mkdir()) {
                 error("Failed to create directory: ${dir.absolutePath}")
@@ -305,8 +327,8 @@ object BuildMessageHandler: MessageHandler {
             output += "[SpicyAzisabaBot] Cloning repository from $url with branch: $branch\n"
             Git.cloneRepository().setDirectory(dir).setURI(url).setBranch(branch).call().close()
             return Pair(output, dir)
-        } else if (REPO_PATTERN.matches(githubUrl)) {
-            val res = REPO_PATTERN.find(githubUrl)!!
+        } else if (repoPattern.matches(githubUrl)) {
+            val res = repoPattern.find(githubUrl)!!
             val (_, owner, repo) = res.groupValues
             if (!dir.mkdir()) {
                 error("Failed to create directory: ${dir.absolutePath}")

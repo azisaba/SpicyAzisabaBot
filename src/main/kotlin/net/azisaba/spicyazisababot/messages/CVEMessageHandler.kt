@@ -6,7 +6,7 @@ import dev.kord.rest.builder.message.EmbedBuilder
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
-import net.azisaba.spicyazisababot.structures.CVEResult
+import net.azisaba.spicyazisababot.cve.CVEResult
 import net.azisaba.spicyazisababot.util.Util
 import net.azisaba.spicyazisababot.util.getObject
 import java.io.FileNotFoundException
