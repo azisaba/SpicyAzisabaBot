@@ -1,7 +1,5 @@
 package net.azisaba.spicyazisababot.commands
 
-import dev.kord.common.entity.Permission
-import dev.kord.common.entity.Permissions
 import dev.kord.common.entity.TextInputStyle
 import dev.kord.core.behavior.interaction.respondEphemeral
 import dev.kord.core.entity.interaction.ApplicationCommandInteraction

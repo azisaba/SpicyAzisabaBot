@@ -2,16 +2,12 @@ package net.azisaba.spicyazisababot.commands
 
 import dev.kord.common.Color
 import dev.kord.common.entity.ChannelType
-import dev.kord.common.entity.Permission
-import dev.kord.common.entity.Permissions
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.interaction.respondEphemeral
 import dev.kord.core.behavior.interaction.respondPublic
 import dev.kord.core.entity.interaction.ApplicationCommandInteraction
 import dev.kord.core.kordLogger
-import dev.kord.rest.builder.interaction.ChannelBuilder
 import dev.kord.rest.builder.interaction.GlobalMultiApplicationCommandBuilder
-import dev.kord.rest.builder.interaction.StringChoiceBuilder
 import dev.kord.rest.builder.interaction.channel
 import dev.kord.rest.builder.interaction.string
 import dev.kord.rest.builder.message.create.embed

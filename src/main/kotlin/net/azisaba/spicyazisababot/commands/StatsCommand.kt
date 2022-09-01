@@ -1,15 +1,10 @@
 package net.azisaba.spicyazisababot.commands
 
 import dev.kord.common.entity.ChannelType
-import dev.kord.common.entity.Permission
-import dev.kord.common.entity.Permissions
-import dev.kord.common.entity.TextInputStyle
-import dev.kord.core.behavior.interaction.modal
 import dev.kord.core.behavior.interaction.respondEphemeral
 import dev.kord.core.behavior.requestMembers
 import dev.kord.core.entity.interaction.ApplicationCommandInteraction
 import dev.kord.gateway.PrivilegedIntent
-import dev.kord.rest.builder.component.ActionRowBuilder
 import dev.kord.rest.builder.interaction.GlobalMultiApplicationCommandBuilder
 import dev.kord.rest.builder.message.create.embed
 import kotlinx.coroutines.flow.toList

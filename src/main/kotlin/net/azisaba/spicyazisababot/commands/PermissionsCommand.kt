@@ -6,7 +6,6 @@ import dev.kord.core.behavior.interaction.respondPublic
 import dev.kord.core.entity.interaction.ApplicationCommandInteraction
 import dev.kord.rest.builder.interaction.BooleanBuilder
 import dev.kord.rest.builder.interaction.GlobalMultiApplicationCommandBuilder
-import dev.kord.rest.builder.interaction.GroupCommandBuilder
 import dev.kord.rest.builder.interaction.IntegerOptionBuilder
 import dev.kord.rest.builder.interaction.RoleBuilder
 import dev.kord.rest.builder.interaction.StringChoiceBuilder

@@ -7,7 +7,6 @@ import dev.kord.core.behavior.requestMembers
 import dev.kord.core.entity.interaction.ApplicationCommandInteraction
 import dev.kord.gateway.PrivilegedIntent
 import dev.kord.rest.builder.interaction.GlobalMultiApplicationCommandBuilder
-import dev.kord.rest.builder.interaction.RoleBuilder
 import dev.kord.rest.builder.interaction.role
 import net.azisaba.spicyazisababot.util.Util.optSnowflake
 
