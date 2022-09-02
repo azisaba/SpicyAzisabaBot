@@ -85,7 +85,7 @@ object UploadAttachmentCommand : CommandHandler {
                 conn.getInputStream().use { input ->
                     if (attachmentData.filename.endsWith(".gz")) {
                         if (input.available() > MAX_FILE_SIZE) {
-                            interaction.respondEphemeral { content = "保存できるファイルの大きさは最大100MBです。" }
+                            msg.edit { content = "保存できるファイルの大きさは最大100MBです。" }
                             return@use
                         }
                         attachmentStatement.setBlob(6, MariaDbBlob(input.readBytes()))
@@ -96,7 +96,7 @@ object UploadAttachmentCommand : CommandHandler {
                             }
                             val newBytes = outBytes.toByteArray()
                             if (newBytes.size > MAX_FILE_SIZE) {
-                                interaction.respondEphemeral {
+                                msg.edit {
                                     content = "保存できるファイルの大きさは最大100MBです。"
                                 }
                                 error("File too large! (gzipped: ${newBytes.size}, max: $MAX_FILE_SIZE)")
