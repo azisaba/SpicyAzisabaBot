@@ -6,6 +6,7 @@ import dev.kord.common.entity.SubCommand
 import dev.kord.common.entity.optional.Optional
 import dev.kord.core.behavior.interaction.ModalParentInteractionBehavior
 import dev.kord.core.behavior.interaction.modal
+import dev.kord.core.cache.data.AttachmentData
 import dev.kord.core.entity.Message
 import dev.kord.core.entity.interaction.Interaction
 import dev.kord.core.entity.interaction.ModalSubmitInteraction
@@ -29,6 +30,8 @@ import kotlin.reflect.KProperty
 
 object Util {
     private val cache = mutableMapOf<String, Pair<Long, String>>()
+
+    fun String.validateTable(): Boolean = "^[\u0041-\u005A\u0061-\u007A0-9_\\-.]+$".toRegex().matches(this)
 
     fun executeCachedTextRequest(url: String, duration: Long): String {
         cache[url]?.let { (until, text) ->
@@ -118,6 +121,17 @@ object Util {
 
     fun Interaction.optLong(name: String) = optAny(name) as Long?
 
+    fun Interaction.optAttachments(): List<AttachmentData> =
+        this.data
+            .data
+            .resolvedObjectsData
+            .value
+            ?.attachments
+            ?.value
+            ?.values
+            ?.toList()
+            ?: emptyList()
+
     fun Interaction.optSubCommands(groupName: String, subCommandName: String): SubCommand? =
         this.data
             .data
@@ -155,10 +169,10 @@ object Util {
             modal(title, uuid, modalBuilder)
         }
     }
+
+    operator fun <V> AtomicReference<V>.getValue(thisRef: AtomicReference<V>?, property: KProperty<*>): V? =
+        get()
+
+    operator fun <V> AtomicReference<V>.setValue(thisRef: AtomicReference<V>?, property: KProperty<*>, value: V?) =
+        set(value)
 }
-
-operator fun <V> AtomicReference<V>.getValue(thisRef: AtomicReference<V>?, property: KProperty<*>): V? =
-    get()
-
-operator fun <V> AtomicReference<V>.setValue(thisRef: AtomicReference<V>?, property: KProperty<*>, value: V?) =
-    set(value)

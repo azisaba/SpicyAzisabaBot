@@ -1,30 +1,32 @@
-package net.azisaba.spicyazisababot.messages
+package net.azisaba.spicyazisababot.commands
 
-import dev.kord.common.entity.Permission
-import dev.kord.core.behavior.reply
-import dev.kord.core.entity.Message
-import net.azisaba.spicyazisababot.util.Constant
+import dev.kord.common.entity.Permissions
+import dev.kord.core.behavior.interaction.respondEphemeral
+import dev.kord.core.behavior.interaction.response.edit
+import dev.kord.core.entity.interaction.ApplicationCommandInteraction
+import dev.kord.rest.builder.interaction.GlobalMultiApplicationCommandBuilder
+import dev.kord.rest.builder.interaction.string
 import net.azisaba.spicyazisababot.util.Util
+import net.azisaba.spicyazisababot.util.Util.optString
+import net.azisaba.spicyazisababot.util.Util.validateTable
 
-@Suppress("SqlNoDataSourceInspection")
-object CreateTableMessageHandler: MessageHandler {
-    override suspend fun canProcess(message: Message): Boolean = message.author?.isBot != true && message.content.split(" ")[0] == "/create-table"
+object CreateMessagesTableCommand : CommandHandler {
+    override suspend fun canProcess(interaction: ApplicationCommandInteraction): Boolean = true
 
-    override suspend fun handle(message: Message) {
-        if (message.getAuthorAsMember()?.getPermissions()?.contains(Permission.Administrator) != true &&
-            message.getAuthorAsMember()?.roleIds?.contains(Constant.DEVELOPER_ROLE) != true) {
+    override suspend fun handle0(interaction: ApplicationCommandInteraction) {
+        val name = interaction.optString("name")!!
+        if (!name.validateTable()) {
+            interaction.respondEphemeral { content = "Invalid table name" }
             return
         }
-        val args = message.content.split(" ")
-        if (message.content == "/create-table") {
-            message.reply { content = "`/create-table <テーブル名>`" }
-            return
+        val message = interaction.respondEphemeral {
+            content = "テーブル`$name`を作成中..."
         }
         Util.getConnection().use {
             it.createStatement().use { statement ->
                 statement.executeUpdate(
                     """
-                    CREATE TABLE `${args[1]}` (
+                    CREATE TABLE `$name` (
                         `guild_id` VARCHAR(255) NOT NULL DEFAULT "0", -- guild (server) id
                         `guild_name` VARCHAR(255) NOT NULL DEFAULT "0", -- guild (server) name
                         `channel_id` VARCHAR(255) NOT NULL DEFAULT "0", -- channel id
@@ -45,6 +47,18 @@ object CreateTableMessageHandler: MessageHandler {
                 )
             }
         }
-        message.reply { content = "テーブル`${args[1]}`を作成しました。" }
+        message.edit { content = "テーブル`$name`を作成しました。" }
+    }
+
+    override fun register(builder: GlobalMultiApplicationCommandBuilder) {
+        builder.input("create-messages-table", "Create messages tables") {
+            dmPermission = false
+            defaultMemberPermissions = Permissions()
+            string("name", "Table name") {
+                required = true
+                minLength = 3
+                maxLength = 50
+            }
+        }
     }
 }

@@ -8,48 +8,37 @@ import dev.kord.core.event.gateway.ReadyEvent
 import dev.kord.core.event.guild.MemberJoinEvent
 import dev.kord.core.event.guild.MemberLeaveEvent
 import dev.kord.core.event.interaction.ApplicationCommandInteractionCreateEvent
-import dev.kord.core.event.interaction.ModalSubmitInteractionCreateEvent
 import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.core.on
 import dev.kord.gateway.Intent
 import dev.kord.gateway.Intents
 import dev.kord.gateway.PrivilegedIntent
 import kotlinx.coroutines.flow.toList
+import net.azisaba.spicyazisababot.commands.AddRolesCommand
 import net.azisaba.spicyazisababot.commands.BuildCommand
+import net.azisaba.spicyazisababot.commands.CopyTableCommand
 import net.azisaba.spicyazisababot.commands.CountRoleMembersCommand
+import net.azisaba.spicyazisababot.commands.CreateAttachmentsTableCommand
+import net.azisaba.spicyazisababot.commands.CreateMessageCommand
+import net.azisaba.spicyazisababot.commands.CreateMessagesTableCommand
 import net.azisaba.spicyazisababot.commands.CustomBuildCommand
+import net.azisaba.spicyazisababot.commands.EditMessageCommand
 import net.azisaba.spicyazisababot.commands.PermissionsCommand
 import net.azisaba.spicyazisababot.commands.StatsCommand
+import net.azisaba.spicyazisababot.commands.ToDBCommand
 import net.azisaba.spicyazisababot.commands.TranslateRomajiCommand
+import net.azisaba.spicyazisababot.commands.UploadAttachmentCommand
 import net.azisaba.spicyazisababot.commands.VoteCommand
 import net.azisaba.spicyazisababot.commands.YouTubeCommand
-import net.azisaba.spicyazisababot.messages.AddRolesMessageHandler
 import net.azisaba.spicyazisababot.messages.CVEMessageHandler
-import net.azisaba.spicyazisababot.messages.CopyTableMessageHandler
-import net.azisaba.spicyazisababot.messages.CreateAttachmentsTableMessageHandler
-import net.azisaba.spicyazisababot.messages.CreateMessageHandler
-import net.azisaba.spicyazisababot.messages.CreateTableMessageHandler
-import net.azisaba.spicyazisababot.messages.DownloadAttachmentMessageHandler
-import net.azisaba.spicyazisababot.messages.EditMessageHandler
 import net.azisaba.spicyazisababot.messages.MArtMessageHandler
 import net.azisaba.spicyazisababot.messages.RealProblemChannelHandler
-import net.azisaba.spicyazisababot.messages.ToDBMessageHandler
 import net.azisaba.spicyazisababot.util.Constant
 import net.azisaba.spicyazisababot.util.Util
 
 private val messageHandlers = listOf(
     CVEMessageHandler,
-    CreateMessageHandler,
-    EditMessageHandler,
     RealProblemChannelHandler,
-    AddRolesMessageHandler,
-    CreateTableMessageHandler,
-    CreateAttachmentsTableMessageHandler,
-    CopyTableMessageHandler,
-    ToDBMessageHandler,
-    DownloadAttachmentMessageHandler,
-
-    // triggered by mentions
     MArtMessageHandler,
 )
 
@@ -66,6 +55,14 @@ suspend fun main() {
         PermissionsCommand.register(this)
         BuildCommand.register(this)
         CustomBuildCommand.register(this)
+        AddRolesCommand.register(this)
+        CreateMessageCommand.register(this)
+        EditMessageCommand.register(this)
+        CreateAttachmentsTableCommand.register(this)
+        CopyTableCommand.register(this)
+        CreateMessagesTableCommand.register(this)
+        UploadAttachmentCommand.register(this)
+        ToDBCommand.register(this)
     }
 
     client.on<ApplicationCommandInteractionCreateEvent> {
@@ -78,10 +75,14 @@ suspend fun main() {
         if (interaction.invokedCommandName == "permissions") PermissionsCommand.handle(interaction)
         if (interaction.invokedCommandName == "build") BuildCommand.handle(interaction)
         if (interaction.invokedCommandName == "custom-build") CustomBuildCommand.handle(interaction)
-    }
-
-    client.on<ModalSubmitInteractionCreateEvent> {
-        this.interaction.modalId
+        if (interaction.invokedCommandName == "add-roles") AddRolesCommand.handle(interaction)
+        if (interaction.invokedCommandName == "create-message") CreateMessageCommand.handle(interaction)
+        if (interaction.invokedCommandName == "edit-message") EditMessageCommand.handle(interaction)
+        if (interaction.invokedCommandName == "create-attachments-table") CreateAttachmentsTableCommand.handle(interaction)
+        if (interaction.invokedCommandName == "copy-table") CopyTableCommand.handle(interaction)
+        if (interaction.invokedCommandName == "create-messages-table") CreateMessagesTableCommand.handle(interaction)
+        if (interaction.invokedCommandName == "upload-attachment") UploadAttachmentCommand.handle(interaction)
+        if (interaction.invokedCommandName == "to-db") ToDBCommand.handle(interaction)
     }
 
     client.on<MessageCreateEvent> {
@@ -109,7 +110,7 @@ suspend fun main() {
     }
 
     client.on<ReadyEvent> {
-        println("Logged in!")
+        println("Logged in as ${kord.getSelf().tag}!")
     }
 
     client.on<MemberLeaveEvent> {
@@ -139,12 +140,12 @@ suspend fun main() {
 
     client.login {
         this.intents = Intents(
-            Intent.GuildMembers,
+            Intent.GuildMembers, // privileged
             Intent.GuildMessages,
             Intent.DirectMessages,
             Intent.GuildVoiceStates,
-            Intent.GuildPresences,
-            Intent.MessageContent,
+            Intent.GuildPresences, // privileged
+            Intent.MessageContent, // privileged
         )
     }
 }

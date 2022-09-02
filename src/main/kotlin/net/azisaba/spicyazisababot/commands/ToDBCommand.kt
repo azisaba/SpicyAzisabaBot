@@ -1,54 +1,54 @@
-package net.azisaba.spicyazisababot.messages
+package net.azisaba.spicyazisababot.commands
 
 import dev.kord.common.entity.MessageType
 import dev.kord.common.entity.Permission
-import dev.kord.common.entity.Snowflake
-import dev.kord.core.Kord
-import dev.kord.core.behavior.edit
-import dev.kord.core.behavior.reply
-import dev.kord.core.entity.Message
+import dev.kord.common.entity.Permissions
+import dev.kord.core.behavior.interaction.respondEphemeral
+import dev.kord.core.behavior.interaction.respondPublic
+import dev.kord.core.behavior.interaction.response.edit
 import dev.kord.core.entity.channel.GuildMessageChannel
-import dev.kord.core.entity.channel.TextChannel
-import dev.kord.core.entity.channel.ThreadParentChannel
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.firstOrNull
-import net.azisaba.spicyazisababot.util.Constant
+import dev.kord.core.entity.channel.TopGuildMessageChannel
+import dev.kord.core.entity.channel.thread.ThreadChannel
+import dev.kord.core.entity.interaction.ApplicationCommandInteraction
+import dev.kord.rest.builder.interaction.GlobalMultiApplicationCommandBuilder
+import dev.kord.rest.builder.interaction.channel
+import dev.kord.rest.builder.interaction.string
 import net.azisaba.spicyazisababot.util.Util
+import net.azisaba.spicyazisababot.util.Util.optSnowflake
+import net.azisaba.spicyazisababot.util.Util.optString
+import net.azisaba.spicyazisababot.util.Util.validateTable
 import org.mariadb.jdbc.MariaDbBlob
 import java.net.HttpURLConnection
 import java.net.URL
 import java.time.Instant
 
-@Suppress("SqlNoDataSourceInspection", "SqlResolve")
-object ToDBMessageHandler: MessageHandler {
-    override suspend fun canProcess(message: Message): Boolean = message.author?.isBot == false && message.content.split(" ")[0] == "/to-db"
+object ToDBCommand : CommandHandler {
+    override suspend fun canProcess(interaction: ApplicationCommandInteraction): Boolean = true
 
-    override suspend fun handle(message: Message) {
-        val args = message.content.split(" ")
-        if (message.content == "/to-db" || args.size <= 2) {
-            message.reply { content = "`/to-db <チャンネルID> <テーブル名>`" }
+    override suspend fun handle0(interaction: ApplicationCommandInteraction) {
+        val table = interaction.optString("table")!!
+        if (!table.validateTable()) {
+            interaction.respondEphemeral { content = "Invalid table name" }
             return
         }
-        val thread = tryGetThreadMaybe(message.kord, args[1])
-        val channel = thread ?: try {
-            val channelId = args[1].toLongOrNull()?.let { Snowflake(it) }
-                ?: return message.reply { content = "チャンネルが見つかりません" }.let {}
-            message.kord.getChannel(channelId) as? TextChannel
-                ?: message.getGuild().cachedThreads.first { it.id == channelId }
-        } catch (e: Exception) {
-            message.reply { content = "チャンネルが見つかりません" }
+        val channelId = interaction.optSnowflake("channel")!!
+        val channel = interaction.channel.getGuildOrNull()!!.getChannel(channelId)
+        if (channel !is TopGuildMessageChannel && channel !is ThreadChannel) {
+            error("unsupported channel type: ${channel.type}")
+        }
+        channel as GuildMessageChannel
+        val topGuildChannel = if (channel is ThreadChannel) channel.getParent() else channel as TopGuildMessageChannel
+        if (!topGuildChannel.getEffectivePermissions(interaction.user.id)
+                .contains(Permissions(Permission.ViewChannel, Permission.ReadMessageHistory))) {
+            interaction.respondEphemeral {
+                content = "You don't have permission to read message history in that channel."
+            }
             return
         }
-        // return if:
-        val authorMember = channel.guild.getMemberOrNull(message.author!!.id)
-        if (authorMember?.getPermissions()?.contains(Permission.Administrator) != true && // author does not have administrator (false or null)
-            authorMember?.roleIds?.contains(Constant.DEVELOPER_ROLE) != true) { // and author does not have developer role (false or null)
-            return
-        }
-        val msg = message.reply {
+        val msg = interaction.respondPublic {
             content = "メッセージをデータベースにコピー中..."
         }
+        val startedAt = Instant.now().epochSecond
         var lastEditMessageAttempt = 0L
         var collectedMessagesCount = 0L
         var skippedFiles = 0L
@@ -64,7 +64,7 @@ object ToDBMessageHandler: MessageHandler {
                 msg.edit {
                     content = """
                         メッセージをデータベースにコピー中...
-                        経過時間: ${Instant.now().epochSecond - msg.timestamp.epochSeconds}秒
+                        経過時間: ${Instant.now().epochSecond - startedAt}秒
                         メッセージ数: $collectedMessagesCount
                         取得したファイル数: $fetchedFiles
                         スキップしたファイル数: $skippedFiles
@@ -72,7 +72,7 @@ object ToDBMessageHandler: MessageHandler {
                 }
                 lastEditMessageAttempt = System.currentTimeMillis()
             }
-            val statement = connection.prepareStatement("INSERT INTO `${args[2]}` VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+            val statement = connection.prepareStatement("INSERT INTO `$table` VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
             val authorData = collectedMessage.data.author
             statement.setObject(1, guildId) // guild_id
             statement.setObject(2, guildName) // guild_name
@@ -124,7 +124,7 @@ object ToDBMessageHandler: MessageHandler {
         msg.edit {
             content = """
                 コピーが完了しました。
-                かかった時間: ${Instant.now().epochSecond - msg.timestamp.epochSeconds}秒
+                かかった時間: ${Instant.now().epochSecond - startedAt}秒
                 メッセージ数: $collectedMessagesCount
                 取得したファイル数: $fetchedFiles
                 スキップしたファイル数: $skippedFiles
@@ -132,16 +132,17 @@ object ToDBMessageHandler: MessageHandler {
         }
     }
 
-    private suspend fun tryGetThreadMaybe(kord: Kord, channelAndThread: String): GuildMessageChannel? {
-        return try {
-            val channelId = Snowflake(channelAndThread.split("#")[0].toLong())
-            val threadId = Snowflake(channelAndThread.split("#")[1].toLong())
-            val channel = kord.getChannel(channelId)
-            if (channel !is ThreadParentChannel) return null
-            channel.activeThreads.filter { it.id == threadId }.firstOrNull()?.let { return it }
-            channel.getPublicArchivedThreads().first { it.id == threadId }
-        } catch (_: Exception) {
-            null
+    override fun register(builder: GlobalMultiApplicationCommandBuilder) {
+        builder.input("to-db", "Copy messages to the database") {
+            dmPermission = false
+            defaultMemberPermissions = Permissions()
+            channel("channel", "The channel to copy messages from") {
+                required = true
+                channelTypes = CreateMessageCommand.textChannelTypes
+            }
+            string("table", "The table to copy messages to") {
+                required = true
+            }
         }
     }
 }
