@@ -69,14 +69,12 @@ object EditMessageCommand : CommandHandler {
             defaultMemberPermissions = Permissions(Permission.ViewChannel.code + Permission.ReadMessageHistory.code + Permission.ManageMessages.code)
 
             channel("channel", "The channel where the message is located") {
-                name(Locale.JAPANESE, "チャンネル")
                 description(Locale.JAPANESE, "メッセージがあるチャンネル")
 
                 required = true
                 channelTypes = CreateMessageCommand.textChannelTypes
             }
             int("message", "The message ID") {
-                name(Locale.JAPANESE, "メッセージ")
                 description(Locale.JAPANESE, "メッセージID")
 
                 required = true

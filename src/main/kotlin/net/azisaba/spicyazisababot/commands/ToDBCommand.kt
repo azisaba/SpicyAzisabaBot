@@ -141,14 +141,12 @@ object ToDBCommand : CommandHandler {
             defaultMemberPermissions = Permissions()
 
             channel("channel", "The channel to copy messages from") {
-                name(Locale.JAPANESE, "チャンネル")
                 description(Locale.JAPANESE, "メッセージのコピー元のチャンネル")
 
                 required = true
                 channelTypes = CreateMessageCommand.textChannelTypes
             }
             string("table", "The table to copy messages to") {
-                name(Locale.JAPANESE, "テーブル")
                 description(Locale.JAPANESE, "メッセージのコピー先のテーブル")
 
                 required = true

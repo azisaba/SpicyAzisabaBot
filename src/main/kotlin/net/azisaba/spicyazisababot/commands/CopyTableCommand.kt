@@ -62,13 +62,11 @@ object CopyTableCommand : CommandHandler {
             defaultMemberPermissions = Permissions()
 
             string("from", "The table to copy from") {
-                name(Locale.JAPANESE, "コピー元")
                 description(Locale.JAPANESE, "コピー元のテーブル")
 
                 required = true
             }
             string("to", "The table to copy to") {
-                name(Locale.JAPANESE, "コピー先")
                 description(Locale.JAPANESE, "コピー先のテーブル")
 
                 required = true

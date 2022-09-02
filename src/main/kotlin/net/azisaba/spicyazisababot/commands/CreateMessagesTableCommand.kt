@@ -59,7 +59,6 @@ object CreateMessagesTableCommand : CommandHandler {
             defaultMemberPermissions = Permissions()
 
             string("name", "Table name") {
-                name(Locale.JAPANESE, "名前")
                 description(Locale.JAPANESE, "テーブルの名前")
 
                 required = true

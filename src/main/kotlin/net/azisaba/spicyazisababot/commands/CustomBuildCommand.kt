@@ -32,19 +32,16 @@ object CustomBuildCommand : CommandHandler {
             defaultMemberPermissions = Permissions()
 
             string("image", "The image to use") {
-                name(Locale.JAPANESE, "イメージ")
                 description(Locale.JAPANESE, "使用するDockerイメージ")
 
                 required = true
             }
             string("command", "Command line") {
-                name(Locale.JAPANESE, "コマンド")
                 description(Locale.JAPANESE, "実行するコマンド")
 
                 required = true
             }
             string("url", "URL of the git repository") {
-                name(Locale.JAPANESE, "URL")
                 description(Locale.JAPANESE, "GitリポジトリのURL")
 
                 required = true

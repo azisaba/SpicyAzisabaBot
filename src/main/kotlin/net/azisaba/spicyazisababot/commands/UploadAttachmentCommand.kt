@@ -138,18 +138,15 @@ object UploadAttachmentCommand : CommandHandler {
             description(Locale.JAPANESE, "ファイルをアップロード")
 
             string("url", "URL of the attachment") {
-                name(Locale.JAPANESE, "URL")
                 description(Locale.JAPANESE, "ファイルのURL")
 
                 minLength = 10
                 maxLength = 6000
             }
             attachment("attachment", "Attachment to upload") {
-                name(Locale.JAPANESE, "ファイル")
                 description(Locale.JAPANESE, "アップロードするファイル")
             }
             string("algorithm", "Algorithm for compression (Default: bzip2)") {
-                name(Locale.JAPANESE, "アルゴリズム")
                 description(Locale.JAPANESE, "圧縮に使用するアルゴリズム (デフォルト: bzip2)")
 
                 choice("bzip2", "bz2")

@@ -71,13 +71,11 @@ object BuildCommand : CommandHandler {
             defaultMemberPermissions = Permissions()
 
             string("url", "URL of the git repository") {
-                name(Locale.JAPANESE, "URL")
                 description(Locale.JAPANESE, "GitリポジトリのURL")
 
                 required = true
             }
             string("type", "Project type") {
-                name(Locale.JAPANESE, "種類")
                 description(Locale.JAPANESE, "プロジェクトの種類")
 
                 required = false

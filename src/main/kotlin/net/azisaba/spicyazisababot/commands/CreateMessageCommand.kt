@@ -69,7 +69,6 @@ object CreateMessageCommand : CommandHandler {
             defaultMemberPermissions = Permissions(Permission.ViewChannel.code + Permission.SendMessages.code + Permission.ManageMessages.code)
 
             channel("channel", "The channel to send the message to") {
-                name(Locale.JAPANESE, "チャンネル")
                 description(Locale.JAPANESE, "メッセージを送信するチャンネル")
 
                 required = true
