@@ -1,5 +1,6 @@
 package net.azisaba.spicyazisababot.commands
 
+import dev.kord.common.entity.Permissions
 import dev.kord.core.behavior.interaction.respondEphemeral
 import dev.kord.core.behavior.interaction.response.edit
 import dev.kord.core.behavior.reply
@@ -55,6 +56,8 @@ object CopyTableCommand : CommandHandler {
 
     override fun register(builder: GlobalMultiApplicationCommandBuilder) {
         builder.input("copy-table", "Copy messages table to another") {
+            dmPermission = false
+            defaultMemberPermissions = Permissions()
             string("from", "The table to copy from") {
                 required = true
             }
