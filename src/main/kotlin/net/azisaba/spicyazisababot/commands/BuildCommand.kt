@@ -97,6 +97,9 @@ object BuildCommand : CommandHandler {
         artifactGlob: String = "**.jar",
         timeout: Long = 10,
     ) {
+        val msg = interaction.respondPublic {
+            content = ":hourglass: ビルド中... (type: `$projectType`)"
+        }
         var output = ""
         output += "[SpicyAzisabaBot] Build triggered by ${interaction.user.id}\n"
         output += "[SpicyAzisabaBot] Project type override: $projectType\n"
@@ -125,9 +128,6 @@ object BuildCommand : CommandHandler {
                     output += " - ${file.name}${if (file.isDirectory) "/" else ""}\n"
                 }
             }
-        }
-        val msg = interaction.respondPublic {
-            content = ":hourglass: ビルド中... (type: `$projectType`)"
         }
         val startedAt = System.currentTimeMillis()
         val completed = java.util.concurrent.atomic.AtomicBoolean()
