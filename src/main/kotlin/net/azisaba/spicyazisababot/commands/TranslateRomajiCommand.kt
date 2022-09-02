@@ -1,5 +1,6 @@
 package net.azisaba.spicyazisababot.commands
 
+import dev.kord.common.Locale
 import dev.kord.common.entity.TextInputStyle
 import dev.kord.core.behavior.interaction.respondEphemeral
 import dev.kord.core.entity.interaction.ApplicationCommandInteraction
@@ -27,6 +28,8 @@ object TranslateRomajiCommand : CommandHandler {
     }
 
     override fun register(builder: GlobalMultiApplicationCommandBuilder) {
-        builder.input("translate-romaji", "Translate romaji to kana")
+        builder.input("translate-romaji", "Translate romaji to hiragana") {
+            description(Locale.JAPANESE, "ローマ字をひらがなに変換")
+        }
     }
 }

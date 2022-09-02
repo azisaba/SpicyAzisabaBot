@@ -1,6 +1,7 @@
 package net.azisaba.spicyazisababot.commands
 
 import dev.kord.common.Color
+import dev.kord.common.Locale
 import dev.kord.common.entity.ChannelType
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.interaction.respondEphemeral
@@ -74,7 +75,14 @@ object YouTubeCommand : CommandHandler {
 
     override fun register(builder: GlobalMultiApplicationCommandBuilder) {
         builder.input("youtube", "Starts an activity in the voice channel.") {
+            description(Locale.JAPANESE, "VCでActivityを開始")
+
+            dmPermission = false
+
             string("type", "Activity to play") {
+                name(Locale.JAPANESE, "種類")
+                description(Locale.JAPANESE, "プレイするActivity")
+
                 required = false
                 choice("Sketch Heads", "902271654783242291")
                 choice("YouTube", "880218394199220334")
@@ -89,10 +97,12 @@ object YouTubeCommand : CommandHandler {
                 choice("Blazing 8s", "832025144389533716")
             }
             channel("channel", "Voice channel to create the invite in.") {
+                name(Locale.JAPANESE, "チャンネル")
+                description(Locale.JAPANESE, "招待を作成するVC")
+
                 required = false
                 channelTypes = listOf(ChannelType.GuildVoice)
             }
-            dmPermission = false
         }
     }
 

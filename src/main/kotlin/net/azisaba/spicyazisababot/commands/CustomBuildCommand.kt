@@ -1,5 +1,6 @@
 package net.azisaba.spicyazisababot.commands
 
+import dev.kord.common.Locale
 import dev.kord.common.entity.Permissions
 import dev.kord.core.entity.interaction.ApplicationCommandInteraction
 import dev.kord.rest.builder.interaction.GlobalMultiApplicationCommandBuilder
@@ -25,21 +26,37 @@ object CustomBuildCommand : CommandHandler {
 
     override fun register(builder: GlobalMultiApplicationCommandBuilder) {
         builder.input("custom-build", "Builds a project using provided docker image") {
+            description(Locale.JAPANESE, "指定されたDockerイメージを使用してプロジェクトをビルド")
+
             dmPermission = false
             defaultMemberPermissions = Permissions()
+
             string("image", "The image to use") {
+                name(Locale.JAPANESE, "イメージ")
+                description(Locale.JAPANESE, "使用するDockerイメージ")
+
                 required = true
             }
             string("command", "Command line") {
+                name(Locale.JAPANESE, "コマンド")
+                description(Locale.JAPANESE, "実行するコマンド")
+
                 required = true
             }
-            string("url", "URL to download the repository") {
+            string("url", "URL of the git repository") {
+                name(Locale.JAPANESE, "URL")
+                description(Locale.JAPANESE, "GitリポジトリのURL")
+
                 required = true
             }
             string("artifact-glob", "Artifact glob (Default: **.jar)") {
+                description(Locale.JAPANESE, "アップロードするファイルのglob (デフォルト: **.jar)")
+
                 required = false
             }
             int("timeout", "Timeout in minutes (Default: 10)") {
+                description(Locale.JAPANESE, "タイムアウトまでの時間(分) (デフォルト: 10)")
+
                 required = false
                 minValue = 1
             }

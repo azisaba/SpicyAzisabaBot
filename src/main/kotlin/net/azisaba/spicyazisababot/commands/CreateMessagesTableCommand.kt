@@ -1,5 +1,6 @@
 package net.azisaba.spicyazisababot.commands
 
+import dev.kord.common.Locale
 import dev.kord.common.entity.Permissions
 import dev.kord.core.behavior.interaction.respondEphemeral
 import dev.kord.core.behavior.interaction.response.edit
@@ -52,9 +53,15 @@ object CreateMessagesTableCommand : CommandHandler {
 
     override fun register(builder: GlobalMultiApplicationCommandBuilder) {
         builder.input("create-messages-table", "Create messages tables") {
+            description(Locale.JAPANESE, "メッセージのテーブルを作成")
+
             dmPermission = false
             defaultMemberPermissions = Permissions()
+
             string("name", "Table name") {
+                name(Locale.JAPANESE, "名前")
+                description(Locale.JAPANESE, "テーブルの名前")
+
                 required = true
                 minLength = 3
                 maxLength = 50

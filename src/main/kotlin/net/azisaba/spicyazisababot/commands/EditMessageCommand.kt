@@ -1,5 +1,6 @@
 package net.azisaba.spicyazisababot.commands
 
+import dev.kord.common.Locale
 import dev.kord.common.entity.Permission
 import dev.kord.common.entity.Permissions
 import dev.kord.common.entity.Snowflake
@@ -62,13 +63,22 @@ object EditMessageCommand : CommandHandler {
 
     override fun register(builder: GlobalMultiApplicationCommandBuilder) {
         builder.input("edit-message", "Edit a message") {
+            description(Locale.JAPANESE, "メッセージを編集")
+
             dmPermission = false
             defaultMemberPermissions = Permissions(Permission.ViewChannel.code + Permission.ReadMessageHistory.code + Permission.ManageMessages.code)
+
             channel("channel", "The channel where the message is located") {
+                name(Locale.JAPANESE, "チャンネル")
+                description(Locale.JAPANESE, "メッセージがあるチャンネル")
+
                 required = true
                 channelTypes = CreateMessageCommand.textChannelTypes
             }
             int("message", "The message ID") {
+                name(Locale.JAPANESE, "メッセージ")
+                description(Locale.JAPANESE, "メッセージID")
+
                 required = true
                 minValue = 1L
             }

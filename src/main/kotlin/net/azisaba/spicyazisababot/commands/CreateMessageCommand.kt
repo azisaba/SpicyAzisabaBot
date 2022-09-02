@@ -1,5 +1,6 @@
 package net.azisaba.spicyazisababot.commands
 
+import dev.kord.common.Locale
 import dev.kord.common.entity.ChannelType
 import dev.kord.common.entity.Permission
 import dev.kord.common.entity.Permissions
@@ -62,9 +63,15 @@ object CreateMessageCommand : CommandHandler {
 
     override fun register(builder: GlobalMultiApplicationCommandBuilder) {
         builder.input("create-message", "Send a message to the channel") {
+            description(Locale.JAPANESE, "チャンネルにメッセージを送信")
+
             dmPermission = false
             defaultMemberPermissions = Permissions(Permission.ViewChannel.code + Permission.SendMessages.code + Permission.ManageMessages.code)
+
             channel("channel", "The channel to send the message to") {
+                name(Locale.JAPANESE, "チャンネル")
+                description(Locale.JAPANESE, "メッセージを送信するチャンネル")
+
                 required = true
                 channelTypes = textChannelTypes
             }

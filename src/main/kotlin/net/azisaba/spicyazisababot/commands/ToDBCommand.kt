@@ -1,5 +1,6 @@
 package net.azisaba.spicyazisababot.commands
 
+import dev.kord.common.Locale
 import dev.kord.common.entity.MessageType
 import dev.kord.common.entity.Permission
 import dev.kord.common.entity.Permissions
@@ -134,13 +135,22 @@ object ToDBCommand : CommandHandler {
 
     override fun register(builder: GlobalMultiApplicationCommandBuilder) {
         builder.input("to-db", "Copy messages to the database") {
+            description(Locale.JAPANESE, "メッセージをデータベースにコピー")
+
             dmPermission = false
             defaultMemberPermissions = Permissions()
+
             channel("channel", "The channel to copy messages from") {
+                name(Locale.JAPANESE, "チャンネル")
+                description(Locale.JAPANESE, "メッセージのコピー元のチャンネル")
+
                 required = true
                 channelTypes = CreateMessageCommand.textChannelTypes
             }
             string("table", "The table to copy messages to") {
+                name(Locale.JAPANESE, "テーブル")
+                description(Locale.JAPANESE, "メッセージのコピー先のテーブル")
+
                 required = true
             }
         }

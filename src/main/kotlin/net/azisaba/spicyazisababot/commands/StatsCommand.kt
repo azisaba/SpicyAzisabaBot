@@ -1,5 +1,6 @@
 package net.azisaba.spicyazisababot.commands
 
+import dev.kord.common.Locale
 import dev.kord.common.entity.ChannelType
 import dev.kord.core.behavior.interaction.respondEphemeral
 import dev.kord.core.behavior.requestMembers
@@ -55,6 +56,8 @@ object StatsCommand : CommandHandler {
 
     override fun register(builder: GlobalMultiApplicationCommandBuilder) {
         builder.input("stats", "Shows stats of the guild.") {
+            description(Locale.JAPANESE, "サーバーの情報を表示")
+
             dmPermission = false
         }
     }

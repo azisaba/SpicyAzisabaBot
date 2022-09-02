@@ -25,6 +25,6 @@ object VoteCommand : CommandHandler {
     }
 
     override fun register(builder: GlobalMultiApplicationCommandBuilder) {
-        builder.input("vote", "投票しよう")
+        builder.input("vote", "pls vote")
     }
 }

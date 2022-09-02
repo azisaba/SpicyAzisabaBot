@@ -1,5 +1,6 @@
 package net.azisaba.spicyazisababot.commands
 
+import dev.kord.common.Locale
 import dev.kord.common.entity.Permissions
 import dev.kord.core.behavior.interaction.respondEphemeral
 import dev.kord.core.entity.interaction.ApplicationCommandInteraction
@@ -31,6 +32,8 @@ object CreateAttachmentsTableCommand : CommandHandler {
 
     override fun register(builder: GlobalMultiApplicationCommandBuilder) {
         builder.input("create-attachments-table", "Create attachments tables") {
+            description(Locale.JAPANESE, "attachmentsテーブルを作成")
+
             dmPermission = false
             defaultMemberPermissions = Permissions()
         }

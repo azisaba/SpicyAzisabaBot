@@ -1,5 +1,6 @@
 package net.azisaba.spicyazisababot.commands
 
+import dev.kord.common.Locale
 import dev.kord.common.entity.Permissions
 import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.behavior.interaction.respondPublic
@@ -64,26 +65,43 @@ object BuildCommand : CommandHandler {
 
     override fun register(builder: GlobalMultiApplicationCommandBuilder) {
         builder.input("build", "Builds a gradle or maven project") {
+            description(Locale.JAPANESE, "GradleもしくはMavenのプロジェクトをビルド")
+
             dmPermission = false
             defaultMemberPermissions = Permissions()
-            string("url", "URL to download the repository") {
+
+            string("url", "URL of the git repository") {
+                name(Locale.JAPANESE, "URL")
+                description(Locale.JAPANESE, "GitリポジトリのURL")
+
                 required = true
             }
             string("type", "Project type") {
+                name(Locale.JAPANESE, "種類")
+                description(Locale.JAPANESE, "プロジェクトの種類")
+
                 required = false
                 choice("Gradle", "gradle")
                 choice("Maven", "maven")
             }
             string("prepend-cmd", "Command to prepend to the build command") {
+                description(Locale.JAPANESE, "ビルドコマンドの先頭に追加するコマンド")
+
                 required = false
             }
             string("append-cmd", "Command to append to the build command") {
+                description(Locale.JAPANESE, "ビルドコマンドの末尾に追加するコマンド")
+
                 required = false
             }
             string("artifact-glob", "Artifact glob (Default: **.jar)") {
+                description(Locale.JAPANESE, "アップロードするファイルのglob (デフォルト: **.jar)")
+
                 required = false
             }
             int("timeout", "Timeout in minutes (Default: 10)") {
+                description(Locale.JAPANESE, "タイムアウトまでの時間(分) (デフォルト: 10)")
+
                 required = false
                 minValue = 1
             }

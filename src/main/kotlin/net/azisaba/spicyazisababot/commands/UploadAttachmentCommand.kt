@@ -1,5 +1,6 @@
 package net.azisaba.spicyazisababot.commands
 
+import dev.kord.common.Locale
 import dev.kord.core.behavior.interaction.respondEphemeral
 import dev.kord.core.behavior.interaction.respondPublic
 import dev.kord.core.behavior.interaction.response.edit
@@ -62,12 +63,12 @@ object UploadAttachmentCommand : CommandHandler {
         deleteStatement.executeUpdate()
         deleteStatement.close()
         connection.prepareStatement("INSERT INTO `attachments` VALUES (?, ?, ?, ?, ?, ?)").use prep@ { attachmentStatement ->
-            val newUrl = if (attachmentData.filename.endsWith(".$algorithm")) {
+            val newUrl = if (algorithm == "none" || attachmentData.filename.endsWith(".$algorithm")) {
                 attachmentData.url
             } else {
                 attachmentData.url + ".$algorithm"
             }
-            val newFilename = if (attachmentData.filename.endsWith(".$algorithm")) {
+            val newFilename = if (algorithm == "none" || attachmentData.filename.endsWith(".$algorithm")) {
                 attachmentData.filename
             } else {
                 attachmentData.filename + ".$algorithm"
@@ -85,7 +86,7 @@ object UploadAttachmentCommand : CommandHandler {
                     error("Unexpected response code: ${conn.responseCode} (${conn.responseMessage})")
                 }
                 conn.getInputStream().use { input ->
-                    if (attachmentData.filename.endsWith(".$algorithm")) {
+                    if (algorithm == "none" || attachmentData.filename.endsWith(".$algorithm")) {
                         if (input.available() > MAX_FILE_SIZE) {
                             msg.edit { content = "保存できるファイルの大きさは最大100MBです。" }
                             return@use
@@ -116,11 +117,16 @@ object UploadAttachmentCommand : CommandHandler {
                 if (conn is HttpURLConnection) conn.disconnect()
                 attachmentStatement.executeUpdate()
                 attachmentStatement.close()
+                val urlParam = if (algorithm == "none") {
+                    ""
+                } else {
+                    "?decompress=true"
+                }
                 msg.edit {
                     content = """
                     処理が完了しました。
                     かかった時間: ${Instant.now().epochSecond - createdTime}秒
-                    ${Constant.MESSAGE_VIEWER_BASE_URL}/attachments/${attachmentData.id}/$newFilename?decompress=true
+                    ${Constant.MESSAGE_VIEWER_BASE_URL}/attachments/${attachmentData.id}/$newFilename$urlParam
                 """.trimIndent()
                 }
             }
@@ -129,14 +135,28 @@ object UploadAttachmentCommand : CommandHandler {
 
     override fun register(builder: GlobalMultiApplicationCommandBuilder) {
         builder.input("upload-attachment", "Upload an attachment") {
+            description(Locale.JAPANESE, "ファイルをアップロード")
+
             string("url", "URL of the attachment") {
-                this.minLength = 10
-                this.maxLength = 6000
+                name(Locale.JAPANESE, "URL")
+                description(Locale.JAPANESE, "ファイルのURL")
+
+                minLength = 10
+                maxLength = 6000
             }
-            attachment("attachment", "Attachment to upload")
-            string("algorithm", "Algorithm to use when compressing files (Default: bzip2)") {
+            attachment("attachment", "Attachment to upload") {
+                name(Locale.JAPANESE, "ファイル")
+                description(Locale.JAPANESE, "アップロードするファイル")
+            }
+            string("algorithm", "Algorithm for compression (Default: bzip2)") {
+                name(Locale.JAPANESE, "アルゴリズム")
+                description(Locale.JAPANESE, "圧縮に使用するアルゴリズム (デフォルト: bzip2)")
+
                 choice("bzip2", "bz2")
                 choice("gzip", "gz")
+                choice("none", "none") {
+                    name(Locale.JAPANESE, "なし")
+                }
             }
         }
     }

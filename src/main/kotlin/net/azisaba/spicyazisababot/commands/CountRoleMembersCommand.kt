@@ -1,5 +1,6 @@
 package net.azisaba.spicyazisababot.commands
 
+import dev.kord.common.Locale
 import dev.kord.common.entity.Permission
 import dev.kord.common.entity.Permissions
 import dev.kord.core.behavior.interaction.respondEphemeral
@@ -25,9 +26,15 @@ object CountRoleMembersCommand : CommandHandler {
 
     override fun register(builder: GlobalMultiApplicationCommandBuilder) {
         builder.input("countrolemembers", "Count members of roles") {
+            description(Locale.JAPANESE, "ロールを持っているメンバーの数を表示")
+
             dmPermission = false
             defaultMemberPermissions = Permissions(Permission.ManageRoles.code)
+
             role("role", "The role") {
+                name(Locale.JAPANESE, "ロール")
+                description(Locale.JAPANESE, "ロール")
+
                 required = true
             }
         }

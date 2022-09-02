@@ -1,5 +1,6 @@
 package net.azisaba.spicyazisababot.commands
 
+import dev.kord.common.Locale
 import dev.kord.common.entity.Permissions
 import dev.kord.core.behavior.interaction.respondEphemeral
 import dev.kord.core.behavior.interaction.response.edit
@@ -55,12 +56,21 @@ object CopyTableCommand : CommandHandler {
 
     override fun register(builder: GlobalMultiApplicationCommandBuilder) {
         builder.input("copy-table", "Copy messages table to another") {
+            description(Locale.JAPANESE, "メッセージのテーブルをコピー")
+
             dmPermission = false
             defaultMemberPermissions = Permissions()
+
             string("from", "The table to copy from") {
+                name(Locale.JAPANESE, "コピー元")
+                description(Locale.JAPANESE, "コピー元のテーブル")
+
                 required = true
             }
             string("to", "The table to copy to") {
+                name(Locale.JAPANESE, "コピー先")
+                description(Locale.JAPANESE, "コピー先のテーブル")
+
                 required = true
             }
         }
