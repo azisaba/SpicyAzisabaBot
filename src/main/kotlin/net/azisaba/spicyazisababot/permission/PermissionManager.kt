@@ -113,9 +113,6 @@ object PermissionManager {
             }
         }
 
-    fun roleCheck(guildId: Snowflake, roleId: Snowflake, node: String, default: Boolean): Boolean =
-        userCheck(guildId, roleId, node) ?: default
-
     fun roleSet(guildId: Snowflake, roleId: Snowflake, node: String, value: Boolean = true) {
         val size = userList(guildId, roleId).size
         if (size >= MAX_PERMISSION_NODES) {

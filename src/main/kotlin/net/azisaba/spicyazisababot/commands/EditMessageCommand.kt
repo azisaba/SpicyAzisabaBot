@@ -1,6 +1,5 @@
 package net.azisaba.spicyazisababot.commands
 
-import dev.kord.common.entity.ChannelType
 import dev.kord.common.entity.Permission
 import dev.kord.common.entity.Permissions
 import dev.kord.common.entity.Snowflake

@@ -3,7 +3,6 @@ package net.azisaba.spicyazisababot.commands
 import dev.kord.common.entity.Permissions
 import dev.kord.core.behavior.interaction.respondEphemeral
 import dev.kord.core.behavior.interaction.response.edit
-import dev.kord.core.behavior.reply
 import dev.kord.core.entity.interaction.ApplicationCommandInteraction
 import dev.kord.rest.builder.interaction.GlobalMultiApplicationCommandBuilder
 import dev.kord.rest.builder.interaction.string
