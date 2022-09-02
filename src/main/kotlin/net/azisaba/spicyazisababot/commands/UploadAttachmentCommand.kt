@@ -13,6 +13,7 @@ import net.azisaba.spicyazisababot.util.Constant
 import net.azisaba.spicyazisababot.util.Util
 import net.azisaba.spicyazisababot.util.Util.optAttachments
 import net.azisaba.spicyazisababot.util.Util.optString
+import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream
 import org.mariadb.jdbc.MariaDbBlob
 import java.io.ByteArrayOutputStream
 import java.net.HttpURLConnection
@@ -27,6 +28,7 @@ object UploadAttachmentCommand : CommandHandler {
     override suspend fun canProcess(interaction: ApplicationCommandInteraction): Boolean = true
 
     override suspend fun handle0(interaction: ApplicationCommandInteraction) {
+        val algorithm = interaction.optString("algorithm") ?: "bz2"
         val url = interaction.optString("url")
         if (url != null) {
             if (!url.matches(REGEX)) {
@@ -34,7 +36,7 @@ object UploadAttachmentCommand : CommandHandler {
                 return
             }
             val attachmentData = Attachment.parse(url)
-            uploadAttachment(interaction, attachmentData)
+            uploadAttachment(interaction, algorithm, attachmentData)
         }
         val attachment = interaction.optAttachments().getOrNull(0)
         if (attachment != null) {
@@ -45,11 +47,11 @@ object UploadAttachmentCommand : CommandHandler {
             }
             */
             val attachmentData = Attachment(attachment.id.value.toLong(), attachment.url, attachment.filename)
-            uploadAttachment(interaction, attachmentData)
+            uploadAttachment(interaction, algorithm, attachmentData)
         }
     }
 
-    private suspend fun uploadAttachment(interaction: ApplicationCommandInteraction, attachmentData: Attachment) {
+    private suspend fun uploadAttachment(interaction: ApplicationCommandInteraction, algorithm: String, attachmentData: Attachment) {
         val createdTime = Instant.now().epochSecond
         val msg = interaction.respondPublic {
             content = "ファイルをアップロード中..."
@@ -60,15 +62,15 @@ object UploadAttachmentCommand : CommandHandler {
         deleteStatement.executeUpdate()
         deleteStatement.close()
         connection.prepareStatement("INSERT INTO `attachments` VALUES (?, ?, ?, ?, ?, ?)").use prep@ { attachmentStatement ->
-            val newUrl = if (attachmentData.filename.endsWith(".gz")) {
+            val newUrl = if (attachmentData.filename.endsWith(".$algorithm")) {
                 attachmentData.url
             } else {
-                attachmentData.url + ".gz"
+                attachmentData.url + ".$algorithm"
             }
-            val newFilename = if (attachmentData.filename.endsWith(".gz")) {
+            val newFilename = if (attachmentData.filename.endsWith(".$algorithm")) {
                 attachmentData.filename
             } else {
-                attachmentData.filename + ".gz"
+                attachmentData.filename + ".$algorithm"
             }
             attachmentStatement.setString(1, "0")
             attachmentStatement.setString(2, attachmentData.id.toString())
@@ -83,7 +85,7 @@ object UploadAttachmentCommand : CommandHandler {
                     error("Unexpected response code: ${conn.responseCode} (${conn.responseMessage})")
                 }
                 conn.getInputStream().use { input ->
-                    if (attachmentData.filename.endsWith(".gz")) {
+                    if (attachmentData.filename.endsWith(".$algorithm")) {
                         if (input.available() > MAX_FILE_SIZE) {
                             msg.edit { content = "保存できるファイルの大きさは最大100MBです。" }
                             return@use
@@ -91,8 +93,14 @@ object UploadAttachmentCommand : CommandHandler {
                         attachmentStatement.setBlob(6, MariaDbBlob(input.readBytes()))
                     } else {
                         ByteArrayOutputStream().use { outBytes ->
-                            GZIPOutputStream(outBytes).use { gzip ->
-                                input.transferTo(gzip)
+                            if (algorithm == "bz2") {
+                                BZip2CompressorOutputStream(outBytes).use { out ->
+                                    input.transferTo(out)
+                                }
+                            } else if (algorithm == "gz") {
+                                GZIPOutputStream(outBytes).use { out ->
+                                    input.transferTo(out)
+                                }
                             }
                             val newBytes = outBytes.toByteArray()
                             if (newBytes.size > MAX_FILE_SIZE) {
@@ -126,6 +134,10 @@ object UploadAttachmentCommand : CommandHandler {
                 this.maxLength = 6000
             }
             attachment("attachment", "Attachment to upload")
+            string("algorithm", "Algorithm to use when compressing files (Default: bzip2)") {
+                choice("bzip2", "bz2")
+                choice("gzip", "gz")
+            }
         }
     }
 
