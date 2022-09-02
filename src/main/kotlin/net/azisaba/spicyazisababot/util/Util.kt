@@ -18,14 +18,11 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.mariadb.jdbc.Driver
-import xyz.acrylicstyle.util.InvalidArgumentException
 import java.net.URL
 import java.sql.Connection
 import java.util.Properties
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicReference
-import kotlin.math.max
-import kotlin.math.min
 import kotlin.reflect.KProperty
 
 object Util {
@@ -79,31 +76,10 @@ object Util {
         try {
             Driver().connect(generateDatabaseURL() + getProperties().toQuery(), getProperties())
         } catch (e: Exception) {
-            throw InvalidArgumentException(
-                "Failed to connect to database (Attempted to use url: '${generateDatabaseURL()}')",
-                e
-            )
+            throw RuntimeException("Failed to connect to database (Attempted to use url: '${generateDatabaseURL()}')", e)
         }
 
     fun Message.mentionsSelf(): Boolean = this.mentionedUserIds.contains(this.kord.selfId)
-
-    fun InvalidArgumentException.toDiscord(): String {
-        val errorComponent = "Invalid syntax: $message"
-        val context = this.context ?: return errorComponent
-        val prev = context.peekWithAmount(-min(context.index(), 15))
-        var next = context.peekWithAmount(
-            min(
-                context.readableCharacters(),
-                max(15, length)
-            )
-        )
-        if (next.isEmpty()) {
-            next = " ".repeat(length)
-        }
-        val left = next.substring(0, length)
-        val right = next.substring(length, next.length)
-        return "$errorComponent\n${prev}__${left}__$right"
-    }
 
     fun Interaction.optAny(name: String): Any? =
         this.data
