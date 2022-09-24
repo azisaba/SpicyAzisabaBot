@@ -7,7 +7,7 @@ class StringReader(private val text: String) {
 
     fun peekString(): String = peek().toString()
 
-    fun read(): String = text.substring(index)
+    fun peekRemaining(): String = text.substring(index)
 
     fun read(amount: Int): String {
         val string = text.substring(index, index + amount)
@@ -15,7 +15,7 @@ class StringReader(private val text: String) {
         return string
     }
 
-    fun startsWith(prefix: String): Boolean = read().startsWith(prefix)
+    fun startsWith(prefix: String): Boolean = peekRemaining().startsWith(prefix)
 
     fun skip(amount: Int): StringReader {
         index += amount

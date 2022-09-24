@@ -3,6 +3,7 @@ package net.azisaba.spicyazisababot
 
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.Kord
+import dev.kord.core.behavior.requestMembers
 import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.event.gateway.ReadyEvent
 import dev.kord.core.event.guild.MemberJoinEvent
@@ -111,6 +112,8 @@ suspend fun main() {
 
     client.on<ReadyEvent> {
         println("Logged in as ${kord.getSelf().tag}!")
+        guilds.forEach { guild -> guild.requestMembers() }
+        println("Fetched all members in ${this.guilds.size} guilds.")
     }
 
     client.on<MemberLeaveEvent> {
