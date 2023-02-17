@@ -17,6 +17,7 @@ import dev.kord.gateway.PrivilegedIntent
 import kotlinx.coroutines.flow.toList
 import net.azisaba.spicyazisababot.commands.AddRolesCommand
 import net.azisaba.spicyazisababot.commands.BuildCommand
+import net.azisaba.spicyazisababot.commands.CheckGitHubCommand
 import net.azisaba.spicyazisababot.commands.CopyTableCommand
 import net.azisaba.spicyazisababot.commands.CountRoleMembersCommand
 import net.azisaba.spicyazisababot.commands.CreateAttachmentsTableCommand
@@ -24,10 +25,12 @@ import net.azisaba.spicyazisababot.commands.CreateMessageCommand
 import net.azisaba.spicyazisababot.commands.CreateMessagesTableCommand
 import net.azisaba.spicyazisababot.commands.CustomBuildCommand
 import net.azisaba.spicyazisababot.commands.EditMessageCommand
+import net.azisaba.spicyazisababot.commands.LinkGitHubCommand
 import net.azisaba.spicyazisababot.commands.PermissionsCommand
 import net.azisaba.spicyazisababot.commands.StatsCommand
 import net.azisaba.spicyazisababot.commands.ToDBCommand
 import net.azisaba.spicyazisababot.commands.TranslateRomajiCommand
+import net.azisaba.spicyazisababot.commands.UnlinkGitHubCommand
 import net.azisaba.spicyazisababot.commands.UploadAttachmentCommand
 import net.azisaba.spicyazisababot.commands.VoteCommand
 import net.azisaba.spicyazisababot.commands.YouTubeCommand
@@ -64,6 +67,9 @@ suspend fun main() {
         CreateMessagesTableCommand.register(this)
         UploadAttachmentCommand.register(this)
         ToDBCommand.register(this)
+        LinkGitHubCommand.register(this)
+        UnlinkGitHubCommand.register(this)
+        CheckGitHubCommand.register(this)
     }
 
     client.on<ApplicationCommandInteractionCreateEvent> {
@@ -84,6 +90,9 @@ suspend fun main() {
         if (interaction.invokedCommandName == "create-messages-table") CreateMessagesTableCommand.handle(interaction)
         if (interaction.invokedCommandName == "upload-attachment") UploadAttachmentCommand.handle(interaction)
         if (interaction.invokedCommandName == "to-db") ToDBCommand.handle(interaction)
+        if (interaction.invokedCommandName == "link-github") LinkGitHubCommand.handle(interaction)
+        if (interaction.invokedCommandName == "unlink-github") UnlinkGitHubCommand.handle(interaction)
+        if (interaction.invokedCommandName == "check-github") CheckGitHubCommand.handle(interaction)
     }
 
     client.on<MessageCreateEvent> {
@@ -123,8 +132,22 @@ suspend fun main() {
             return@on
         }
         if (channel.guildId != guildId) return@on
+        val currentGitHubConnection = Util.getConnection().use { connection ->
+            connection.prepareStatement("SELECT `github_id` FROM `github` WHERE `discord_id` = ?").use { statement ->
+                statement.setString(1, user.id.toString())
+                statement.executeQuery().use { resultSet ->
+                    if (resultSet.next()) {
+                        resultSet.getString("github_id")
+                    } else {
+                        null
+                    }
+                }
+            }
+        }
         channel.createMessage("""
             :outbox_tray: `${user.tag}` <@${user.id}> (ID: ${user.id}, Is bot: ${user.isBot})
+            GitHub: `${currentGitHubConnection}`
+            
             Nickname:
             ```
             ${old?.nickname}

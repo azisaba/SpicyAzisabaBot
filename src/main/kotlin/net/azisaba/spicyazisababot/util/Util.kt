@@ -16,13 +16,17 @@ import dev.kord.rest.builder.interaction.ModalBuilder
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.mariadb.jdbc.Driver
 import java.net.URL
 import java.sql.Connection
 import java.util.Properties
+import java.util.Timer
+import java.util.TimerTask
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicReference
+import kotlin.concurrent.timerTask
 import kotlin.reflect.KProperty
 
 object Util {
@@ -151,4 +155,16 @@ object Util {
 
     operator fun <V> AtomicReference<V>.setValue(thisRef: AtomicReference<V>?, property: KProperty<*>, value: V?) =
         set(value)
+
+    inline fun Timer.scheduleAtFixedRateBlocking(delay: Long, period: Long, crossinline action: suspend TimerTask.() -> Unit): TimerTask {
+        val task = object : TimerTask() {
+            override fun run() {
+                runBlocking {
+                    action()
+                }
+            }
+        }
+        scheduleAtFixedRate(task, delay, period)
+        return task
+    }
 }
