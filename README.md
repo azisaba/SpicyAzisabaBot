@@ -17,7 +17,7 @@
 - MESSAGE_VIEWER_BASE_URL - without trailing slash
 - DOCKER_HOST - for /build command. set to empty string (or don't set) if you want to disable the command
 - GITHUB_TOKEN - personal access token for /build command. used when fetching pull request and head repository. this is optional, anonymous authentication will be used if left empty.
-- GITHUB_CLIENT_ID - for /link-github command. set to empty string to trust user input
+- GITHUB_CLIENT_ID - for /link-github command. set to empty string to disable the command
 - PROXY - for /link-github command. set to empty string to disable proxy
 - PROXY_AUTHORIZATION - for /link-github command. set to empty string to disable proxy authentication
 - GITHUB_LINK_NOTIFY_WEBHOOK - for /(un)link-github command. set to empty string to disable notification

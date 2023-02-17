@@ -7,7 +7,6 @@ import dev.kord.core.behavior.interaction.response.edit
 import dev.kord.core.behavior.interaction.response.respond
 import dev.kord.core.entity.interaction.ApplicationCommandInteraction
 import dev.kord.rest.builder.interaction.GlobalMultiApplicationCommandBuilder
-import dev.kord.rest.builder.interaction.string
 import dev.kord.rest.builder.message.create.allowedMentions
 import io.ktor.client.*
 import io.ktor.client.engine.*
@@ -20,7 +19,6 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import net.azisaba.spicyazisababot.GitHubUser
 import net.azisaba.spicyazisababot.util.Util
-import net.azisaba.spicyazisababot.util.Util.optString
 import net.azisaba.spicyazisababot.util.Util.scheduleAtFixedRateBlocking
 import java.util.Timer
 
@@ -47,25 +45,13 @@ object LinkGitHubCommand : CommandHandler {
     override suspend fun canProcess(interaction: ApplicationCommandInteraction): Boolean = true
 
     override suspend fun handle0(interaction: ApplicationCommandInteraction) {
-        val id = interaction.optString("id") ?: return
         val defer = interaction.deferEphemeralResponse()
         try {
             createTable()
             val clientId: String? = System.getenv("GITHUB_CLIENT_ID")
             if (clientId == null) {
-                Util.getConnection().use { connection ->
-                    connection.prepareStatement("INSERT INTO `github` (`discord_id`, `github_id`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `github_id` = ?").use { statement ->
-                        statement.setString(1, interaction.user.id.toString())
-                        statement.setString(2, id)
-                        statement.setString(3, id)
-                        statement.executeUpdate()
-                    }
-                }
-                defer.respond { content = "GitHubアカウントを連携しました。" }
-                notifyWebhook(
-                    interaction.kord,
-                    "${interaction.user.mention} (ID: `${interaction.id}`)がGitHubアカウント(`$id`)を連携しました。"
-                )
+                defer.respond { content = "GitHub連携機能が有効になっていません。" }
+                return
             } else {
                 val responseObject = client.post("https://github.com/login/device/code?client_id=$clientId&scope=read:user")
                 val res =
@@ -110,25 +96,18 @@ object LinkGitHubCommand : CommandHandler {
                             header("Authorization", "$tokenType $accessToken")
                         }
                         val user: GitHubUser = json.decodeFromString(userResponse.bodyAsText())
-                        if (user.login != id) {
-                            cancel()
-                            message.edit {
-                                content = "GitHubアカウントの連携に失敗しました。\n指定したIDとコードを入力したアカウントが一致しません。"
-                            }
-                            return@scheduleAtFixedRateBlocking
-                        }
                         Util.getConnection().use { connection ->
                             connection.prepareStatement("INSERT INTO `github` (`discord_id`, `github_id`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `github_id` = ?").use { statement ->
                                 statement.setString(1, interaction.user.id.toString())
-                                statement.setString(2, id)
-                                statement.setString(3, id)
+                                statement.setString(2, user.login)
+                                statement.setString(3, user.login)
                                 statement.executeUpdate()
                             }
                         }
                         message.edit {
                             content = "GitHubアカウントを連携しました。"
                         }
-                        notifyWebhook(interaction.kord, "${interaction.user.mention} (ID: `${interaction.id}`)がGitHubアカウント(`$id`)を連携しました。")
+                        notifyWebhook(interaction.kord, "${interaction.user.mention} (ID: `${interaction.id}`)がGitHubアカウント(`${user.login}`)を連携しました。")
                     } catch (e: Exception) {
                         cancel()
                         message.edit { content = "処理中にエラーが発生しました。" }
@@ -145,12 +124,6 @@ object LinkGitHubCommand : CommandHandler {
     override fun register(builder: GlobalMultiApplicationCommandBuilder) {
         builder.input("link-github", "Link GitHub account") {
             description(Locale.JAPANESE, "GitHubアカウントを連携")
-
-            string("id", "ID of the GitHub account") {
-                description(Locale.JAPANESE, "GitHubアカウントのID")
-
-                required = true
-            }
         }
     }
 
