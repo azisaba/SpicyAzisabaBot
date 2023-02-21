@@ -65,14 +65,13 @@ object ToDBCommand : CommandHandler {
         val channelIdString = channel.id.toString()
         val channelName = channel.name
         val connection = Util.getConnection()
+        connection.prepareStatement("DELETE FROM `$table` WHERE `channel_id` = ?").use {
+            it.setString(1, channelIdString)
+            it.executeUpdate()
+        }
         channel.messages.collect { collectedMessage ->
             collectedMessagesCount++
             if (System.currentTimeMillis() - lastEditMessageAttempt > 5000) {
-                if (Instant.now().epochSecond - startedAt > 890 && followupMessage == null) {
-                    followupMessage = channel.createMessage {
-                        //
-                    }
-                }
                 val content = """
                     メッセージをデータベースにコピー中...
                     経過時間: ${Instant.now().epochSecond - startedAt}秒
@@ -80,10 +79,14 @@ object ToDBCommand : CommandHandler {
                     取得したファイル数: $fetchedFiles
                     スキップしたファイル数: $skippedFiles
                 """.trimIndent()
-                if (followupMessage != null) {
-                    followupMessage!!.edit { this.content = content }
+                if (Instant.now().epochSecond - startedAt > 890 && followupMessage == null) {
+                    followupMessage = channel.createMessage { this.content = content }
                 } else {
-                    msg.edit { this.content = content }
+                    if (followupMessage != null) {
+                        followupMessage!!.edit { this.content = content }
+                    } else {
+                        msg.edit { this.content = content }
+                    }
                 }
                 lastEditMessageAttempt = System.currentTimeMillis()
             }
