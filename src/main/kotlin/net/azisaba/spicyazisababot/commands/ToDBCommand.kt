@@ -4,17 +4,23 @@ import dev.kord.common.Locale
 import dev.kord.common.entity.MessageType
 import dev.kord.common.entity.Permission
 import dev.kord.common.entity.Permissions
+import dev.kord.core.behavior.channel.createMessage
+import dev.kord.core.behavior.edit
 import dev.kord.core.behavior.interaction.respondEphemeral
 import dev.kord.core.behavior.interaction.respondPublic
+import dev.kord.core.behavior.interaction.response.PublicMessageInteractionResponseBehavior
 import dev.kord.core.behavior.interaction.response.edit
+import dev.kord.core.entity.Message
 import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.core.entity.channel.TopGuildMessageChannel
 import dev.kord.core.entity.channel.thread.ThreadChannel
 import dev.kord.core.entity.interaction.ApplicationCommandInteraction
 import dev.kord.rest.builder.interaction.GlobalMultiApplicationCommandBuilder
+import dev.kord.rest.builder.interaction.boolean
 import dev.kord.rest.builder.interaction.channel
 import dev.kord.rest.builder.interaction.string
 import net.azisaba.spicyazisababot.util.Util
+import net.azisaba.spicyazisababot.util.Util.optAny
 import net.azisaba.spicyazisababot.util.Util.optSnowflake
 import net.azisaba.spicyazisababot.util.Util.optString
 import net.azisaba.spicyazisababot.util.Util.validateTable
@@ -32,6 +38,7 @@ object ToDBCommand : CommandHandler {
             interaction.respondEphemeral { content = "Invalid table name" }
             return
         }
+        val overwriteAttachments = interaction.optAny("overwrite-attachments") as Boolean? ?: false
         val channelId = interaction.optSnowflake("channel")!!
         val channel = interaction.channel.getGuildOrNull()!!.getChannel(channelId)
         if (channel !is TopGuildMessageChannel && channel !is ThreadChannel) {
@@ -46,9 +53,8 @@ object ToDBCommand : CommandHandler {
             }
             return
         }
-        val msg = interaction.respondPublic {
-            content = "メッセージをデータベースにコピー中..."
-        }
+        val msg = interaction.respondPublic { content = "メッセージをデータベースにコピー中..." }
+        var followupMessage: Message? = null
         val startedAt = Instant.now().epochSecond
         var lastEditMessageAttempt = 0L
         var collectedMessagesCount = 0L
@@ -62,14 +68,22 @@ object ToDBCommand : CommandHandler {
         channel.messages.collect { collectedMessage ->
             collectedMessagesCount++
             if (System.currentTimeMillis() - lastEditMessageAttempt > 5000) {
-                msg.edit {
-                    content = """
-                        メッセージをデータベースにコピー中...
-                        経過時間: ${Instant.now().epochSecond - startedAt}秒
-                        メッセージ数: $collectedMessagesCount
-                        取得したファイル数: $fetchedFiles
-                        スキップしたファイル数: $skippedFiles
-                    """.trimIndent()
+                if (Instant.now().epochSecond - startedAt > 890 && followupMessage == null) {
+                    followupMessage = channel.createMessage {
+                        //
+                    }
+                }
+                val content = """
+                    メッセージをデータベースにコピー中...
+                    経過時間: ${Instant.now().epochSecond - startedAt}秒
+                    メッセージ数: $collectedMessagesCount
+                    取得したファイル数: $fetchedFiles
+                    スキップしたファイル数: $skippedFiles
+                """.trimIndent()
+                if (followupMessage != null) {
+                    followupMessage!!.edit { this.content = content }
+                } else {
+                    msg.edit { this.content = content }
                 }
                 lastEditMessageAttempt = System.currentTimeMillis()
             }
@@ -93,6 +107,17 @@ object ToDBCommand : CommandHandler {
             statement.executeUpdate()
             statement.close()
             collectedMessage.attachments.forEach { attachment ->
+                if (!overwriteAttachments) {
+                    connection.prepareStatement("SELECT `attachment_id` FROM `attachments` WHERE `attachment_id` = ?").use { checkStatement ->
+                        checkStatement.setObject(1, attachment.id.toString())
+                        checkStatement.executeQuery().use { rs ->
+                            if (rs.next()) {
+                                skippedFiles++
+                                return@forEach // skip already fetched files
+                            }
+                        }
+                    }
+                }
                 if (attachment.size > 50000000) {
                     skippedFiles++
                     return@forEach // skip > 50 MB files
@@ -122,14 +147,17 @@ object ToDBCommand : CommandHandler {
                 attachmentStatement.close()
             }
         }
-        msg.edit {
-            content = """
-                コピーが完了しました。
-                かかった時間: ${Instant.now().epochSecond - startedAt}秒
-                メッセージ数: $collectedMessagesCount
-                取得したファイル数: $fetchedFiles
-                スキップしたファイル数: $skippedFiles
-            """.trimIndent()
+        val content = """
+            コピーが完了しました。
+            かかった時間: ${Instant.now().epochSecond - startedAt}秒
+            メッセージ数: $collectedMessagesCount
+            取得したファイル数: $fetchedFiles
+            スキップしたファイル数: $skippedFiles
+        """.trimIndent()
+        if (followupMessage != null) {
+            followupMessage!!.edit { this.content = content }
+        } else {
+            msg.edit { this.content = content }
         }
     }
 
@@ -150,6 +178,10 @@ object ToDBCommand : CommandHandler {
                 description(Locale.JAPANESE, "メッセージのコピー先のテーブル")
 
                 required = true
+            }
+            boolean("overwrite-attachments", "Overwrite existing attachments") {
+                description(Locale.JAPANESE, "既存の添付ファイルを上書きするかどうか")
+                default = false
             }
         }
     }
