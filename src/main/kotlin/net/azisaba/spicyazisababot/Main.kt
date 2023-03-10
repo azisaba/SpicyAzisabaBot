@@ -34,9 +34,7 @@ import net.azisaba.spicyazisababot.commands.TranslateRomajiCommand
 import net.azisaba.spicyazisababot.commands.UnlinkGitHubCommand
 import net.azisaba.spicyazisababot.commands.UploadAttachmentCommand
 import net.azisaba.spicyazisababot.commands.VoteCommand
-import net.azisaba.spicyazisababot.commands.YouTubeCommand
 import net.azisaba.spicyazisababot.messages.CVEMessageHandler
-import net.azisaba.spicyazisababot.messages.MArtMessageHandler
 import net.azisaba.spicyazisababot.messages.RealProblemChannelHandler
 import net.azisaba.spicyazisababot.util.Constant
 import net.azisaba.spicyazisababot.util.Util
@@ -44,7 +42,6 @@ import net.azisaba.spicyazisababot.util.Util
 private val messageHandlers = listOf(
     CVEMessageHandler,
     RealProblemChannelHandler,
-    MArtMessageHandler,
 )
 
 @OptIn(PrivilegedIntent::class)
@@ -53,7 +50,6 @@ suspend fun main() {
 
     client.createGlobalApplicationCommands {
         StatsCommand.register(this)
-        YouTubeCommand.register(this)
         VoteCommand.register(this)
         TranslateRomajiCommand.register(this)
         CountRoleMembersCommand.register(this)
@@ -77,7 +73,6 @@ suspend fun main() {
     client.on<ApplicationCommandInteractionCreateEvent> {
         if (interaction.user.isBot) return@on
         if (interaction.invokedCommandName == "stats") StatsCommand.handle(interaction)
-        if (interaction.invokedCommandName == "youtube") YouTubeCommand.handle(interaction)
         if (interaction.invokedCommandName == "vote") VoteCommand.handle(interaction)
         if (interaction.invokedCommandName == "translate-romaji") TranslateRomajiCommand.handle(interaction)
         if (interaction.invokedCommandName == "countrolemembers") CountRoleMembersCommand.handle(interaction)

@@ -10,14 +10,12 @@ version = "2.0.0"
 repositories {
     mavenCentral()
     maven { url = uri("https://jitpack.io/") }
-    maven { url = uri("https://repo.acrylicstyle.xyz/repository/maven-public/") }
 }
 
 java.toolchain.languageVersion.set(JavaLanguageVersion.of(17))
 
 dependencies {
     implementation(kotlin("stdlib"))
-    implementation("xyz.acrylicstyle.util:http:0.16.5")
     implementation("dev.kord:kord-core:0.8.0-M16")
     implementation("org.slf4j:slf4j-simple:2.0.0")
     implementation("org.mariadb.jdbc:mariadb-java-client:3.0.6")

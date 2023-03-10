@@ -36,7 +36,7 @@ object ChatGPTCommand : CommandHandler {
                     LinkGitHubCommand.json.encodeToString(
                         PostBody(
                             "gpt-3.5-turbo",
-                            4000,
+                            2000,
                             1.0,
                             listOf(
                                 PostBodyMessage("user", text),
@@ -57,7 +57,7 @@ object ChatGPTCommand : CommandHandler {
         } catch (e: Exception) {
             e.printStackTrace()
             defer.respond {
-                content = "エラーが発生しました。"
+                content = "エラーが発生しました。\n${e.message}"
             }
         }
     }
