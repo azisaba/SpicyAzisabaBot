@@ -24,7 +24,7 @@ import java.util.Timer
 
 object LinkGitHubCommand : CommandHandler {
     private val timer = Timer()
-    private val json = Json { ignoreUnknownKeys = true }
+    internal val json = Json { ignoreUnknownKeys = true }
     private val client = HttpClient(CIO) {
         val proxyUrl = System.getenv("PROXY")
         val proxyAuthorization = System.getenv("PROXY_AUTHORIZATION")

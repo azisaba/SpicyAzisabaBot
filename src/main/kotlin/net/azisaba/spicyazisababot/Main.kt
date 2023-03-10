@@ -17,6 +17,7 @@ import dev.kord.gateway.PrivilegedIntent
 import kotlinx.coroutines.flow.toList
 import net.azisaba.spicyazisababot.commands.AddRolesCommand
 import net.azisaba.spicyazisababot.commands.BuildCommand
+import net.azisaba.spicyazisababot.commands.ChatGPTCommand
 import net.azisaba.spicyazisababot.commands.CheckGitHubCommand
 import net.azisaba.spicyazisababot.commands.CopyTableCommand
 import net.azisaba.spicyazisababot.commands.CountRoleMembersCommand
@@ -70,6 +71,7 @@ suspend fun main() {
         LinkGitHubCommand.register(this)
         UnlinkGitHubCommand.register(this)
         CheckGitHubCommand.register(this)
+        ChatGPTCommand.register(this)
     }
 
     client.on<ApplicationCommandInteractionCreateEvent> {
@@ -93,6 +95,7 @@ suspend fun main() {
         if (interaction.invokedCommandName == "link-github") LinkGitHubCommand.handle(interaction)
         if (interaction.invokedCommandName == "unlink-github") UnlinkGitHubCommand.handle(interaction)
         if (interaction.invokedCommandName == "check-github") CheckGitHubCommand.handle(interaction)
+        if (interaction.invokedCommandName == "chatgpt") ChatGPTCommand.handle(interaction)
     }
 
     client.on<MessageCreateEvent> {
