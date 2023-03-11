@@ -112,5 +112,5 @@ internal data class ResponseChoice(
     val message: ContentWithRole,
     val index: Int,
     @SerialName("finish_reason")
-    val finishReason: String
+    val finishReason: String?
 )
