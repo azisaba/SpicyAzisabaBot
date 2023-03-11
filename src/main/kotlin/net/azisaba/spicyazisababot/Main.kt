@@ -91,6 +91,7 @@ suspend fun main() {
         if (interaction.invokedCommandName == "unlink-github") UnlinkGitHubCommand.handle(interaction)
         if (interaction.invokedCommandName == "check-github") CheckGitHubCommand.handle(interaction)
         if (interaction.invokedCommandName == "chatgpt") ChatGPTCommand.handle(interaction)
+        if (interaction.invokedCommandName == "reply") ChatGPTCommand.handle(interaction)
     }
 
     client.on<MessageCreateEvent> {
