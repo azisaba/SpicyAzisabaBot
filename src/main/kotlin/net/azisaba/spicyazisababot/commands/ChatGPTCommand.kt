@@ -37,10 +37,11 @@ object ChatGPTCommand : CommandHandler {
         }
         val text = interaction.optString("text")!!
         val temperature = (interaction.optAny("temperature") as? Number)?.toDouble() ?: 1.0
+        val role = interaction.optString("role") ?: "user"
         val defer = interaction.deferPublicResponse()
         try {
             val response = client.post("https://api.openai.com/v1/chat/completions") {
-                val thisMessage = ContentWithRole("user", text)
+                val thisMessage = ContentWithRole(role, text)
                 conversations.computeIfAbsent(interaction.user.id) { mutableListOf() }.add(thisMessage)
                 this.setBody(
                     LinkGitHubCommand.json.encodeToString(
@@ -81,6 +82,12 @@ object ChatGPTCommand : CommandHandler {
                 minValue = 0.0
                 maxValue = 1.0
             }
+            string("role", "文章を生成するためのテキストの役割を指定します。") {
+                required = false
+                choice("ユーザー", "user")
+                choice("アシスタント", "assistant")
+                choice("システム", "system")
+            }
         }
         builder.input("chatgpt", "ChatGPTを使って文章を生成します。") {
             string("text", "文章を生成するためのテキストを入力してください。") {
@@ -90,6 +97,12 @@ object ChatGPTCommand : CommandHandler {
                 required = false
                 minValue = 0.0
                 maxValue = 1.0
+            }
+            string("role", "文章を生成するためのテキストの役割を指定します。") {
+                required = false
+                choice("ユーザー", "user")
+                choice("アシスタント", "assistant")
+                choice("システム", "system")
             }
         }
     }
