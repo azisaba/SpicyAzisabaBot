@@ -22,6 +22,7 @@ import kotlinx.serialization.json.jsonObject
 import net.azisaba.spicyazisababot.util.Util.optAny
 import net.azisaba.spicyazisababot.util.Util.optLong
 import net.azisaba.spicyazisababot.util.Util.optString
+import java.io.ByteArrayInputStream
 
 object ChatGPTCommand : CommandHandler {
     private val conversations = mutableMapOf<Snowflake, MutableList<ContentWithRole>>() // user id to messages
@@ -65,7 +66,12 @@ object ChatGPTCommand : CommandHandler {
             conversations.computeIfAbsent(interaction.user.id) { mutableListOf() }.add(choice.message)
             val result = choice.message.content
             defer.respond {
-                content = result
+                content = if (result.length > 2000) {
+                    addFile("output.md", ByteArrayInputStream(result.toByteArray()))
+                    "生成された文章が2000文字を超えたため、ファイルとして送信します。"
+                } else {
+                    result
+                }
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -91,10 +97,10 @@ object ChatGPTCommand : CommandHandler {
                 choice("アシスタント", "assistant")
                 choice("システム", "system")
             }
-            number("max_tokens", "生成する文章の最大文字数を指定します。") {
+            number("max_tokens", "生成する文章の最大文字数を指定します。(100～4000、デフォルト2000)") {
                 required = false
                 minValue = 100.0
-                maxValue = 2000.0
+                maxValue = 4000.0
             }
         }
         builder.input("reply", "ChatGPTを使って文章を生成します。") {
