@@ -99,7 +99,7 @@ object Util {
 
     fun Interaction.optSnowflake(name: String) = optAny(name) as Snowflake?
 
-    fun Interaction.optLong(name: String) = optAny(name) as Long?
+    fun Interaction.optLong(name: String) = (optAny(name) as Double?)?.toLong()
 
     fun Interaction.optAttachments(): List<AttachmentData> =
         this.data

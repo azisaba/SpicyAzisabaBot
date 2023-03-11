@@ -3,6 +3,7 @@ package net.azisaba.spicyazisababot.commands
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.interaction.response.respond
 import dev.kord.core.entity.interaction.ApplicationCommandInteraction
+import dev.kord.rest.builder.interaction.GlobalChatInputCreateBuilder
 import dev.kord.rest.builder.interaction.GlobalMultiApplicationCommandBuilder
 import dev.kord.rest.builder.interaction.number
 import dev.kord.rest.builder.interaction.string
@@ -19,6 +20,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import net.azisaba.spicyazisababot.util.Util.optAny
+import net.azisaba.spicyazisababot.util.Util.optLong
 import net.azisaba.spicyazisababot.util.Util.optString
 
 object ChatGPTCommand : CommandHandler {
@@ -38,6 +40,7 @@ object ChatGPTCommand : CommandHandler {
         val text = interaction.optString("text")!!
         val temperature = (interaction.optAny("temperature") as? Number)?.toDouble() ?: 1.0
         val role = interaction.optString("role") ?: "user"
+        val maxTokens = interaction.optLong("max_tokens") ?: 2000
         val defer = interaction.deferPublicResponse()
         try {
             val response = client.post("https://api.openai.com/v1/chat/completions") {
@@ -47,7 +50,7 @@ object ChatGPTCommand : CommandHandler {
                     LinkGitHubCommand.json.encodeToString(
                         PostBody(
                             "gpt-3.5-turbo",
-                            2000,
+                            maxTokens.toInt(),
                             temperature,
                             conversations[interaction.user.id] ?: error("conversation is null"),
                         )
@@ -73,7 +76,7 @@ object ChatGPTCommand : CommandHandler {
     }
 
     override fun register(builder: GlobalMultiApplicationCommandBuilder) {
-        builder.input("reply", "ChatGPTを使って文章を生成します。") {
+        val build: GlobalChatInputCreateBuilder.() -> Unit = {
             string("text", "文章を生成するためのテキストを入力してください。") {
                 required = true
             }
@@ -87,23 +90,18 @@ object ChatGPTCommand : CommandHandler {
                 choice("ユーザー", "user")
                 choice("アシスタント", "assistant")
                 choice("システム", "system")
+            }
+            number("max_tokens", "生成する文章の最大文字数を指定します。") {
+                required = false
+                minValue = 100.0
+                maxValue = 2000.0
             }
         }
+        builder.input("reply", "ChatGPTを使って文章を生成します。") {
+            build(this)
+        }
         builder.input("chatgpt", "ChatGPTを使って文章を生成します。") {
-            string("text", "文章を生成するためのテキストを入力してください。") {
-                required = true
-            }
-            number("temperature", "生成する文章の温度を指定します。") {
-                required = false
-                minValue = 0.0
-                maxValue = 1.0
-            }
-            string("role", "文章を生成するためのテキストの役割を指定します。") {
-                required = false
-                choice("ユーザー", "user")
-                choice("アシスタント", "assistant")
-                choice("システム", "system")
-            }
+            build(this)
         }
     }
 }
