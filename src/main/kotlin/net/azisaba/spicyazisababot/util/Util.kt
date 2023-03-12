@@ -106,7 +106,7 @@ object Util {
 
     fun Interaction.optSnowflake(name: String) = optString(name)?.toULong()?.let { Snowflake(it) }
 
-    fun Interaction.optLong(name: String) = optString(name)?.toLong()
+    fun Interaction.optLong(name: String) = optDouble(name)?.toLong()
 
     fun Interaction.optDouble(name: String) = optString(name)?.toDouble()
 
