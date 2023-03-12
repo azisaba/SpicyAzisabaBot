@@ -62,17 +62,25 @@ object CreateImageCommand : CommandHandler {
                 header("Authorization", "Bearer ${System.getenv("OPENAI_API_KEY")}")
                 header("Content-Type", "application/json")
             }
-            val image = LinkGitHubCommand.json.decodeFromString(ResponseImage.serializer(), response.bodyAsText())
-            defer.respond {
-                image.data.forEachIndexed { index, data ->
-                    val bytes = data.toByteArray()
-                    val stream = ByteArrayInputStream(bytes)
-                    val name = "image_${index + 1}.png"
-                    addFile(name, stream)
+            val responseAsText = response.bodyAsText()
+            try {
+                val image = LinkGitHubCommand.json.decodeFromString(ResponseImage.serializer(), responseAsText)
+                defer.respond {
+                    image.data.forEachIndexed { index, data ->
+                        val bytes = data.toByteArray()
+                        val stream = ByteArrayInputStream(bytes)
+                        val name = "image_${index + 1}.png"
+                        addFile(name, stream)
+                    }
+                }.apply {
+                    if (emoji != null) {
+                        message.addReaction(emoji)
+                    }
                 }
-            }.apply {
-                if (emoji != null) {
-                    message.addReaction(emoji)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                defer.respond {
+                    content = "エラーが発生しました。\n${e.message}\n```json\n${responseAsText}\n```"
                 }
             }
         } catch (e: Exception) {
@@ -98,9 +106,6 @@ object CreateImageCommand : CommandHandler {
                 choice("256x256", "256x256")
                 choice("512x512", "512x512")
                 choice("1024x1024", "1024x1024")
-            }
-            boolean("force", "不適切なpromptを入力されても生成する") {
-                required = false
             }
         }
     }
