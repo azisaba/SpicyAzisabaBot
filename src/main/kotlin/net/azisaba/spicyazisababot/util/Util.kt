@@ -8,6 +8,7 @@ import dev.kord.core.behavior.interaction.ModalParentInteractionBehavior
 import dev.kord.core.behavior.interaction.modal
 import dev.kord.core.cache.data.AttachmentData
 import dev.kord.core.entity.Message
+import dev.kord.core.entity.interaction.ApplicationCommandInteraction
 import dev.kord.core.entity.interaction.Interaction
 import dev.kord.core.entity.interaction.ModalSubmitInteraction
 import dev.kord.core.event.interaction.ModalSubmitInteractionCreateEvent
@@ -26,7 +27,6 @@ import java.util.Timer
 import java.util.TimerTask
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicReference
-import kotlin.concurrent.timerTask
 import kotlin.reflect.KProperty
 
 object Util {
@@ -86,20 +86,31 @@ object Util {
     fun Message.mentionsSelf(): Boolean = this.mentionedUserIds.contains(this.kord.selfId)
 
     fun Interaction.optAny(name: String): Any? =
-        this.data
-            .data
-            .options
-            .value
-            ?.find { it.name == name }
-            ?.value
-            ?.value
-            ?.value
+        when (this) {
+            is ApplicationCommandInteraction ->
+                this.data
+                    .data
+                    .options
+                    .value
+                    ?.find { it.name == name }
+                    ?.value
+                    ?.value
+                    ?.value
+            is ModalSubmitInteraction ->
+                this.textInputs[name]?.value
+                    ?: this.data.data.options.value?.find { it.name == name }?.value?.value?.value
+            else -> null
+        }
 
-    fun Interaction.optString(name: String) = optAny(name) as String?
+    fun Interaction.optString(name: String) = optAny(name)?.toString()
 
-    fun Interaction.optSnowflake(name: String) = optAny(name) as Snowflake?
+    fun Interaction.optSnowflake(name: String) = optString(name)?.toULong()?.let { Snowflake(it) }
 
-    fun Interaction.optLong(name: String) = (optAny(name) as Double?)?.toLong()
+    fun Interaction.optLong(name: String) = optString(name)?.toLong()
+
+    fun Interaction.optDouble(name: String) = optString(name)?.toDouble()
+
+    fun Interaction.optBoolean(name: String) = optString(name)?.toBoolean()
 
     fun Interaction.optAttachments(): List<AttachmentData> =
         this.data
