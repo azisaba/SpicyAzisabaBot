@@ -22,6 +22,7 @@ import net.azisaba.spicyazisababot.commands.CheckGitHubCommand
 import net.azisaba.spicyazisababot.commands.CopyTableCommand
 import net.azisaba.spicyazisababot.commands.CountRoleMembersCommand
 import net.azisaba.spicyazisababot.commands.CreateAttachmentsTableCommand
+import net.azisaba.spicyazisababot.commands.CreateImageCommand
 import net.azisaba.spicyazisababot.commands.CreateMessageCommand
 import net.azisaba.spicyazisababot.commands.CreateMessagesTableCommand
 import net.azisaba.spicyazisababot.commands.CustomBuildCommand
@@ -68,6 +69,7 @@ suspend fun main() {
         UnlinkGitHubCommand.register(this)
         CheckGitHubCommand.register(this)
         ChatGPTCommand.register(this)
+        CreateImageCommand.register(this)
     }
 
     client.on<ApplicationCommandInteractionCreateEvent> {
@@ -92,6 +94,7 @@ suspend fun main() {
         if (interaction.invokedCommandName == "check-github") CheckGitHubCommand.handle(interaction)
         if (interaction.invokedCommandName == "chatgpt") ChatGPTCommand.handle(interaction)
         if (interaction.invokedCommandName == "reply") ChatGPTCommand.handle(interaction)
+        if (interaction.invokedCommandName == "create-image") CreateImageCommand.handle(interaction)
     }
 
     client.on<MessageCreateEvent> {

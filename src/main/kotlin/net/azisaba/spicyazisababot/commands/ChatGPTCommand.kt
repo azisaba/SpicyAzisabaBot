@@ -162,24 +162,24 @@ object ChatGPTCommand : CommandHandler {
 }
 
 @Serializable
-private data class PostModerationBody(
+internal data class PostModerationBody(
     val input: String,
 )
 
 @Serializable
-private data class PostModerationResponse(
+internal data class PostModerationResponse(
     val id: String,
     val model: String,
     val results: List<PostModerationResponseResults>,
 )
 
 @Serializable
-private data class PostModerationResponseResults(
+internal data class PostModerationResponseResults(
     val flagged: Boolean,
 )
 
 @Serializable
-internal data class PostBody(
+private data class PostBody(
     val model: String,
     @SerialName("max_tokens")
     val maxTokens: Int,
@@ -188,10 +188,10 @@ internal data class PostBody(
 )
 
 @Serializable
-internal data class ContentWithRole(val role: String, val content: String)
+private data class ContentWithRole(val role: String, val content: String)
 
 @Serializable
-internal data class ResponseChoice(
+private data class ResponseChoice(
     val message: ContentWithRole,
     val index: Int,
     @SerialName("finish_reason")
