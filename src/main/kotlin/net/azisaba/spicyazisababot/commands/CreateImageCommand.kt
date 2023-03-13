@@ -4,7 +4,6 @@ import dev.kord.core.behavior.interaction.response.respond
 import dev.kord.core.entity.ReactionEmoji
 import dev.kord.core.entity.interaction.ApplicationCommandInteraction
 import dev.kord.rest.builder.interaction.GlobalMultiApplicationCommandBuilder
-import dev.kord.rest.builder.interaction.boolean
 import dev.kord.rest.builder.interaction.number
 import dev.kord.rest.builder.interaction.string
 import io.ktor.client.*
@@ -18,7 +17,6 @@ import io.ktor.util.*
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
-import net.azisaba.spicyazisababot.util.Util.optBoolean
 import net.azisaba.spicyazisababot.util.Util.optLong
 import net.azisaba.spicyazisababot.util.Util.optString
 import java.io.ByteArrayInputStream
@@ -36,7 +34,6 @@ object CreateImageCommand : CommandHandler {
         val prompt = interaction.optString("prompt") ?: return
         val n = interaction.optLong("n") ?: 1
         val size = interaction.optString("size") ?: "1024x1024"
-        val force = interaction.optBoolean("force") ?: false
         val defer = interaction.deferPublicResponse()
         try {
             val moderationResponse = client.post("https://api.openai.com/v1/moderations") {
@@ -44,16 +41,11 @@ object CreateImageCommand : CommandHandler {
                 header("Authorization", "Bearer ${System.getenv("OPENAI_API_KEY")}")
                 header("Content-Type", "application/json")
             }.bodyAsText().let { LinkGitHubCommand.json.decodeFromString(PostModerationResponse.serializer(), it) }
-            val emoji = if (moderationResponse.results.any { it.flagged }) {
-                if (!force) {
-                    defer.respond {
-                        content = "（入力された文章は不適切と判断されたため、生成されません）"
-                    }.apply { message.addReaction(ReactionEmoji.Unicode("⚠️")) }
-                    return
-                }
-                ReactionEmoji.Unicode("⚠️")
-            } else {
-                null
+            if (moderationResponse.results.any { it.flagged }) {
+                defer.respond {
+                    content = "（入力された文章は不適切と判断されたため、生成されません）"
+                }.apply { message.addReaction(ReactionEmoji.Unicode("⚠️")) }
+                return
             }
             val response = client.post("https://api.openai.com/v1/images/generations") {
                 setBody(
@@ -71,10 +63,6 @@ object CreateImageCommand : CommandHandler {
                         val stream = ByteArrayInputStream(bytes)
                         val name = "image_${index + 1}.png"
                         addFile(name, stream)
-                    }
-                }.apply {
-                    if (emoji != null) {
-                        message.addReaction(emoji)
                     }
                 }
             } catch (e: Exception) {
