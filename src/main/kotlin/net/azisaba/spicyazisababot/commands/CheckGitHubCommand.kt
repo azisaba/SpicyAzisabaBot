@@ -13,7 +13,7 @@ object CheckGitHubCommand : CommandHandler {
     override suspend fun canProcess(interaction: ApplicationCommandInteraction): Boolean = true
 
     override suspend fun handle0(interaction: ApplicationCommandInteraction) {
-        val id = interaction.optString("id") ?: return
+        val id = interaction.optString("id") ?: interaction.user.id.toString()
         val defer = interaction.deferEphemeralResponse()
         try {
             LinkGitHubCommand.createTable()

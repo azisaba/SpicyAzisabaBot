@@ -70,6 +70,7 @@ suspend fun main() {
         CheckGitHubCommand.register(this)
         ChatGPTCommand.register(this)
         CreateImageCommand.register(this)
+//        CleanUserMessagesCommand.register(this)
     }
 
     client.on<ApplicationCommandInteractionCreateEvent> {
@@ -95,6 +96,7 @@ suspend fun main() {
         if (interaction.invokedCommandName == "chatgpt") ChatGPTCommand.handle(interaction)
         if (interaction.invokedCommandName == "reply") ChatGPTCommand.handle(interaction)
         if (interaction.invokedCommandName == "create-image") CreateImageCommand.handle(interaction)
+//        if (interaction.invokedCommandName == "clean-user-messages") CleanUserMessagesCommand.handle(interaction)
     }
 
     client.on<MessageCreateEvent> {
