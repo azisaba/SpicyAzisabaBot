@@ -50,8 +50,9 @@ object ChatGPTCommand : CommandHandler {
         val role = interaction.optString("role") ?: "user"
         val maxTokens = interaction.optLong("max_tokens") ?: 2000
         val force = interaction.optBoolean("force") ?: false
+        val system = interaction.optString("system")
         interaction.optString("text")?.apply {
-            return handle(interaction, this, temperature, role, maxTokens, force)
+            return handle(interaction, this, temperature, role, maxTokens, force, system)
         }
 
         // or ask for text input
@@ -63,11 +64,11 @@ object ChatGPTCommand : CommandHandler {
                 }
             }
         }) {
-            handle(this, this.textInputs["text"]!!.value!!, temperature, role, maxTokens, force)
+            handle(this, this.textInputs["text"]!!.value!!, temperature, role, maxTokens, force, system)
         }
     }
 
-    private suspend fun handle(interaction: ActionInteraction, text: String, temperature: Double, role: String, maxTokens: Long, force: Boolean) {
+    private suspend fun handle(interaction: ActionInteraction, text: String, temperature: Double, role: String, maxTokens: Long, force: Boolean, system: String?) {
         val defer = interaction.deferPublicResponse()
         try {
             val moderationResponse = client.post("https://api.openai.com/v1/moderations") {
@@ -88,6 +89,10 @@ object ChatGPTCommand : CommandHandler {
             }
             val response = client.post("https://api.openai.com/v1/chat/completions") {
                 val thisMessage = ContentWithRole(role, text)
+                if (system != null) {
+                    conversations.computeIfAbsent(interaction.user.id) { mutableListOf() }
+                        .add(ContentWithRole("system", system))
+                }
                 conversations.computeIfAbsent(interaction.user.id) { mutableListOf() }.add(thisMessage)
                 setBody(
                     LinkGitHubCommand.json.encodeToString(
@@ -141,7 +146,6 @@ object ChatGPTCommand : CommandHandler {
                 required = false
                 choice("ユーザー", "user")
                 choice("アシスタント", "assistant")
-                choice("システム", "system")
             }
             number("max_tokens", "生成する文章の最大文字数を指定します。(100～4000、デフォルト2000)") {
                 required = false
@@ -157,6 +161,10 @@ object ChatGPTCommand : CommandHandler {
         }
         builder.input("chatgpt", "ChatGPTを使って文章を生成します。") {
             build(this)
+            string("system", "システムの指示") {
+                required = false
+                minLength = 1
+            }
         }
     }
 }
