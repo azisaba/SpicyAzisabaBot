@@ -16,7 +16,7 @@ java.toolchain.languageVersion.set(JavaLanguageVersion.of(17))
 
 dependencies {
     implementation(kotlin("stdlib"))
-    implementation("dev.kord:kord-core:0.8.0-M16")
+    implementation("dev.kord:kord-core:0.8.1")
     implementation("org.slf4j:slf4j-simple:2.0.0")
     implementation("org.mariadb.jdbc:mariadb-java-client:3.0.6")
     implementation("com.github.AzisabaNetwork:GravenBuilder:6d03d0aae6")
