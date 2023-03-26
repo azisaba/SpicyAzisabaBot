@@ -7,6 +7,8 @@ import dev.kord.core.entity.channel.thread.ThreadChannel
 import dev.kord.core.entity.interaction.ApplicationCommandInteraction
 import dev.kord.rest.builder.interaction.GlobalMultiApplicationCommandBuilder
 import dev.kord.rest.builder.interaction.string
+import io.ktor.client.request.forms.*
+import io.ktor.utils.io.jvm.javaio.*
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -58,7 +60,7 @@ object CleanUserMessagesCommand : CommandHandler {
             File("cleaned-messages.json").writeText(json)
             defer.respond {
                 content = "${count}個のメッセージを削除しました。"
-                ByteArrayInputStream(json.toByteArray()).use { input -> addFile("messages.json", input) }
+                ByteArrayInputStream(json.toByteArray()).use { input -> addFile("messages.json", ChannelProvider { input.toByteReadChannel() }) }
             }
         }
     }

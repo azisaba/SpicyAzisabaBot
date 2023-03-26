@@ -8,7 +8,7 @@ import dev.kord.core.behavior.interaction.response.edit
 import dev.kord.core.entity.interaction.ApplicationCommandInteraction
 import dev.kord.core.kordLogger
 import dev.kord.rest.builder.interaction.GlobalMultiApplicationCommandBuilder
-import dev.kord.rest.builder.interaction.int
+import dev.kord.rest.builder.interaction.integer
 import dev.kord.rest.builder.interaction.string
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
@@ -97,7 +97,7 @@ object BuildCommand : CommandHandler {
 
                 required = false
             }
-            int("timeout", "Timeout in minutes (Default: 10)") {
+            integer("timeout", "Timeout in minutes (Default: 10)") {
                 description(Locale.JAPANESE, "タイムアウトまでの時間(分) (デフォルト: 10)")
 
                 required = false

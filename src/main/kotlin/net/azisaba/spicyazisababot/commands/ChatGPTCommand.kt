@@ -16,8 +16,10 @@ import io.ktor.client.engine.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.*
 import io.ktor.client.request.*
+import io.ktor.client.request.forms.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
+import io.ktor.utils.io.jvm.javaio.*
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
@@ -114,7 +116,9 @@ object ChatGPTCommand : CommandHandler {
             val result = choice.message.content
             defer.respond {
                 content = if (result.length > 2000) {
-                    addFile("output.md", ByteArrayInputStream(result.toByteArray()))
+                    ByteArrayInputStream(result.toByteArray()).use { stream ->
+                        addFile("output.md", ChannelProvider { stream.toByteReadChannel() })
+                    }
                     "（生成された文章が2000文字を超えたため、ファイルとして送信します。）"
                 } else {
                     result

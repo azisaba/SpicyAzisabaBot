@@ -4,7 +4,7 @@ import dev.kord.common.Locale
 import dev.kord.common.entity.Permissions
 import dev.kord.core.entity.interaction.ApplicationCommandInteraction
 import dev.kord.rest.builder.interaction.GlobalMultiApplicationCommandBuilder
-import dev.kord.rest.builder.interaction.int
+import dev.kord.rest.builder.interaction.integer
 import dev.kord.rest.builder.interaction.string
 import net.azisaba.gravenbuilder.ProjectType
 import net.azisaba.spicyazisababot.util.Util.optLong
@@ -51,7 +51,7 @@ object CustomBuildCommand : CommandHandler {
 
                 required = false
             }
-            int("timeout", "Timeout in minutes (Default: 10)") {
+            integer("timeout", "Timeout in minutes (Default: 10)") {
                 description(Locale.JAPANESE, "タイムアウトまでの時間(分) (デフォルト: 10)")
 
                 required = false

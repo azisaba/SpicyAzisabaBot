@@ -12,7 +12,7 @@ import dev.kord.core.entity.interaction.ApplicationCommandInteraction
 import dev.kord.core.exception.EntityNotFoundException
 import dev.kord.rest.builder.interaction.GlobalMultiApplicationCommandBuilder
 import dev.kord.rest.builder.interaction.channel
-import dev.kord.rest.builder.interaction.int
+import dev.kord.rest.builder.interaction.integer
 import net.azisaba.spicyazisababot.util.Util.modal
 import net.azisaba.spicyazisababot.util.Util.optLong
 import net.azisaba.spicyazisababot.util.Util.optSnowflake
@@ -74,9 +74,8 @@ object EditMessageCommand : CommandHandler {
                 required = true
                 channelTypes = CreateMessageCommand.textChannelTypes
             }
-            int("message", "The message ID") {
+            integer("message", "The message ID") {
                 description(Locale.JAPANESE, "メッセージID")
-
                 required = true
                 minValue = 1L
             }

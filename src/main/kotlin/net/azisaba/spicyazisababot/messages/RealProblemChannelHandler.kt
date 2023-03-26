@@ -1,5 +1,6 @@
 package net.azisaba.spicyazisababot.messages
 
+import dev.kord.common.entity.ArchiveDuration
 import dev.kord.core.entity.Message
 import dev.kord.core.entity.channel.TextChannel
 import net.azisaba.spicyazisababot.util.Constant
@@ -11,6 +12,9 @@ object RealProblemChannelHandler : MessageHandler {
         if (message.author?.isBot != false) return
         val content = message.content.lines().getOrNull(0) ?: return
         if (content.startsWith("^")) return
-        (message.channel.fetchChannel() as TextChannel).startPublicThreadWithMessage(message.id, content)
+        (message.channel.fetchChannel() as TextChannel).startPublicThreadWithMessage(message.id, content) {
+            autoArchiveDuration = ArchiveDuration.Day
+            reason = null
+        }
     }
 }

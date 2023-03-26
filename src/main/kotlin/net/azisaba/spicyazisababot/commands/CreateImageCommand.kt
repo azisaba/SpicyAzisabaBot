@@ -11,9 +11,11 @@ import io.ktor.client.engine.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.*
 import io.ktor.client.request.*
+import io.ktor.client.request.forms.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.util.*
+import io.ktor.utils.io.jvm.javaio.*
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
@@ -60,9 +62,10 @@ object CreateImageCommand : CommandHandler {
                 defer.respond {
                     image.data.forEachIndexed { index, data ->
                         val bytes = data.toByteArray()
-                        val stream = ByteArrayInputStream(bytes)
-                        val name = "image_${index + 1}.png"
-                        addFile(name, stream)
+                        ByteArrayInputStream(bytes).use { stream ->
+                            val name = "image_${index + 1}.png"
+                            addFile(name, ChannelProvider { stream.toByteReadChannel() })
+                        }
                     }
                 }
             } catch (e: Exception) {
