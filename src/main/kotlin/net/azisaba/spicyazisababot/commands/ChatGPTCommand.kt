@@ -52,7 +52,8 @@ object ChatGPTCommand : CommandHandler {
         val role = interaction.optString("role") ?: "user"
         val maxTokens = interaction.optLong("max_tokens") ?: 2000
         val force = interaction.optBoolean("force") ?: false
-        val system = interaction.optString("system")
+        val systemPreset = interaction.optString("system-preset")
+        val system = System.getenv("CHATGPT_SYSTEM_PRESET_$systemPreset") ?: interaction.optString("system")
         interaction.optString("text")?.apply {
             return handle(interaction, this, temperature, role, maxTokens, force, system)
         }
@@ -166,6 +167,10 @@ object ChatGPTCommand : CommandHandler {
         builder.input("chatgpt", "ChatGPTを使って文章を生成します。") {
             build(this)
             string("system", "システムの指示") {
+                required = false
+                minLength = 1
+            }
+            string("system-preset", "ぷりせっと") {
                 required = false
                 minLength = 1
             }
