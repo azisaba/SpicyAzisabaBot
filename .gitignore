@@ -8,3 +8,4 @@ logs/
 *.jar
 !/gradle/wrapper/gradle-wrapper.jar
 /*.json
+config/*.yml

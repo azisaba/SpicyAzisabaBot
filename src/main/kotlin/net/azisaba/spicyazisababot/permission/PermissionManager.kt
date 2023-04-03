@@ -8,7 +8,7 @@ import java.math.BigInteger
 import java.sql.Types
 
 object PermissionManager {
-    private const val MAX_PERMISSION_NODES = 500
+    private const val MAX_PERMISSION_NODES = 10
 
     suspend fun check(member: Member, node: String): PermissionCheckResult {
         val userValue = userCheck(member.guildId, member.id, node)
@@ -40,6 +40,18 @@ object PermissionManager {
             return PermissionCheckResult(everyoneValue, "Role 0 (everyone) has `$node` set to $everyoneValue")
         }
         return PermissionCheckResult(null, "No roles have `$node` set and the user does not have permission set.")
+    }
+
+    fun globalCheck(userId: Snowflake, node: GlobalPermissionNode): PermissionCheckResult {
+        val userValue = globalUserCheck(userId, node)
+        if (userValue != null) {
+            return PermissionCheckResult(userValue, "User $userId has `$node` set to $userValue")
+        }
+        val defaultValue = globalUserCheck(Snowflake(0), node)
+        if (defaultValue != null) {
+            return PermissionCheckResult(defaultValue, "`$node` set to $defaultValue by default")
+        }
+        return PermissionCheckResult(null, "User does not have permission `$node` set and there is no default permission set.")
     }
 
     fun userCheck(guildId: Snowflake, userId: Snowflake, node: String): Boolean? =
@@ -93,6 +105,55 @@ object PermissionManager {
                 val list = mutableListOf<PermissionData>()
                 while (rs.next()) {
                     list.add(PermissionData(userId, PermissionType.USER, guildId, rs.getString("node"), rs.getBoolean("value")))
+                }
+                list
+            }
+        }
+
+    fun globalUserCheck(userId: Snowflake, node: GlobalPermissionNode): Boolean? =
+        Util.getConnection().use { connection ->
+            connection.prepareStatement("SELECT `value` FROM `global_permissions` WHERE `id` = ? AND `node` = ?").use { statement ->
+                statement.setObject(1, BigInteger(userId.toString()), Types.BIGINT)
+                statement.setString(2, node.node)
+                val rs = statement.executeQuery()
+                if (rs.next()) {
+                    rs.getBoolean("value")
+                } else {
+                    null
+                }
+            }
+        }
+
+    fun globalUserSet(userId: Snowflake, node: GlobalPermissionNode, value: Boolean = true) {
+        Util.getConnection().use { connection ->
+            connection.prepareStatement("INSERT INTO `global_permissions` (`id`, `node`, `value`) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE `value` = VALUES(`value`)").use { statement ->
+                statement.setObject(1, BigInteger(userId.toString()), Types.BIGINT)
+                statement.setString(2, node.node)
+                statement.setBoolean(3, value)
+                statement.executeUpdate()
+            }
+        }
+    }
+
+    fun globalUserUnset(userId: Snowflake, node: GlobalPermissionNode) {
+        Util.getConnection().use { connection ->
+            connection.prepareStatement("DELETE FROM `global_permissions` WHERE `id` = ? AND `node` = ?").use { statement ->
+                statement.setObject(1, BigInteger(userId.toString()), Types.BIGINT)
+                statement.setString(2, node.node)
+                statement.executeUpdate()
+            }
+        }
+    }
+
+    fun globalUserList(userId: Snowflake): List<GlobalPermissionData> =
+        Util.getConnection().use { connection ->
+            connection.prepareStatement("SELECT `node`, `value` FROM `global_permissions` WHERE `id` = ?").use { statement ->
+                statement.setObject(1, BigInteger(userId.toString()), Types.BIGINT)
+                val rs = statement.executeQuery()
+                val list = mutableListOf<GlobalPermissionData>()
+                while (rs.next()) {
+                    val node = GlobalPermissionNode.nodeMap[rs.getString("node")] ?: continue
+                    list.add(GlobalPermissionData(userId, node, rs.getBoolean("value")))
                 }
                 list
             }

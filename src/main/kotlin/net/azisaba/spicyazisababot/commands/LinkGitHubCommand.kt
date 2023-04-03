@@ -18,6 +18,7 @@ import io.ktor.http.*
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import net.azisaba.spicyazisababot.GitHubUser
+import net.azisaba.spicyazisababot.config.secret.BotSecretConfig
 import net.azisaba.spicyazisababot.util.Util
 import net.azisaba.spicyazisababot.util.Util.scheduleAtFixedRateBlocking
 import java.util.Timer
@@ -26,15 +27,15 @@ object LinkGitHubCommand : CommandHandler {
     private val timer = Timer()
     internal val json = Json { ignoreUnknownKeys = true }
     private val client = HttpClient(CIO) {
-        val proxyUrl = System.getenv("PROXY")
-        val proxyAuthorization = System.getenv("PROXY_AUTHORIZATION")
+        val proxyUrl = BotSecretConfig.config.proxyUrl
+        val proxyAuthorization = BotSecretConfig.config.proxyAuthorization
 
-        if (proxyUrl != null) {
+        if (proxyUrl.isNotBlank()) {
             engine {
                 proxy = ProxyBuilder.http(proxyUrl)
             }
 
-            if (proxyAuthorization != null) {
+            if (proxyAuthorization.isNotBlank()) {
                 defaultRequest {
                     header(HttpHeaders.ProxyAuthorization, "Basic $proxyAuthorization")
                 }
@@ -47,13 +48,14 @@ object LinkGitHubCommand : CommandHandler {
     override suspend fun handle0(interaction: ApplicationCommandInteraction) {
         val defer = interaction.deferEphemeralResponse()
         try {
-            createTable()
-            val clientId: String? = System.getenv("GITHUB_CLIENT_ID")
-            if (clientId == null) {
+            val clientId = BotSecretConfig.config.githubClientId
+            if (clientId.isBlank()) {
                 defer.respond { content = "GitHub連携機能が有効になっていません。" }
                 return
             } else {
-                val responseObject = client.post("https://github.com/login/device/code?client_id=$clientId&scope=read:user")
+                createTable()
+                val responseObject =
+                    client.post("https://github.com/login/device/code?client_id=$clientId&scope=read:user")
                 val res =
                     responseObject.bodyAsText()
                         .split("&")
@@ -97,17 +99,21 @@ object LinkGitHubCommand : CommandHandler {
                         }
                         val user: GitHubUser = json.decodeFromString(userResponse.bodyAsText())
                         Util.getConnection().use { connection ->
-                            connection.prepareStatement("INSERT INTO `github` (`discord_id`, `github_id`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `github_id` = ?").use { statement ->
-                                statement.setString(1, interaction.user.id.toString())
-                                statement.setString(2, user.login)
-                                statement.setString(3, user.login)
-                                statement.executeUpdate()
-                            }
+                            connection.prepareStatement("INSERT INTO `github` (`discord_id`, `github_id`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `github_id` = ?")
+                                .use { statement ->
+                                    statement.setString(1, interaction.user.id.toString())
+                                    statement.setString(2, user.login)
+                                    statement.setString(3, user.login)
+                                    statement.executeUpdate()
+                                }
                         }
                         message.edit {
                             content = "GitHubアカウントを連携しました。"
                         }
-                        notifyWebhook(interaction.kord, "${interaction.user.mention} (ID: `${interaction.id}`)がGitHubアカウント(`${user.login}`)を連携しました。")
+                        notifyWebhook(
+                            interaction.kord,
+                            "${interaction.user.mention} (ID: `${interaction.id}`)がGitHubアカウント(`${user.login}`)を連携しました。"
+                        )
                     } catch (e: Exception) {
                         cancel()
                         message.edit { content = "処理中にエラーが発生しました。" }
@@ -144,7 +150,8 @@ object LinkGitHubCommand : CommandHandler {
     }
 
     suspend fun notifyWebhook(kord: Kord, content: String) {
-        val webhook = System.getenv("GITHUB_LINK_NOTIFY_WEBHOOK") ?: return
+        val webhook = BotSecretConfig.config.githubLinkWebhookUrl
+        if (webhook.isBlank()) return
         val path = webhook.split("/")
         val webhookId = path[path.size - 2]
         val webhookToken = path[path.size - 1]

@@ -7,7 +7,6 @@ import dev.kord.common.entity.optional.Optional
 import dev.kord.core.behavior.interaction.ModalParentInteractionBehavior
 import dev.kord.core.behavior.interaction.modal
 import dev.kord.core.cache.data.AttachmentData
-import dev.kord.core.entity.Message
 import dev.kord.core.entity.interaction.ApplicationCommandInteraction
 import dev.kord.core.entity.interaction.Interaction
 import dev.kord.core.entity.interaction.ModalSubmitInteraction
@@ -19,10 +18,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
-import org.mariadb.jdbc.Driver
+import net.azisaba.spicyazisababot.config.secret.BotSecretConfig
 import java.net.URL
-import java.sql.Connection
-import java.util.Properties
 import java.util.Timer
 import java.util.TimerTask
 import java.util.UUID
@@ -48,42 +45,7 @@ object Util {
         return text
     }
 
-    fun getEnvOrThrow(name: String) = System.getenv(name) ?: error("Missing environment variable: $name")
-
-    private fun getEnvOrElse(name: String, @Suppress("SameParameterValue") def: String) = System.getenv(name) ?: def
-
-    private fun getProperties() = Properties().apply {
-        setProperty("useSSL", getEnvOrElse("MARIADB_USE_SSL", "true").toBoolean().toString())
-        setProperty(
-            "verifyServerCertificate",
-            getEnvOrElse("MARIADB_VERIFY_SERVER_CERT", "true").toBoolean().toString()
-        )
-        setProperty("user", getEnvOrThrow("MARIADB_USERNAME"))
-        setProperty("password", getEnvOrThrow("MARIADB_PASSWORD"))
-    }
-
-    private fun Properties.toQuery(): String {
-        val sb = StringBuilder("?")
-        var notFirst = false
-        this.forEach { o1: Any?, o2: Any? ->
-            if (notFirst) sb.append('&')
-            sb.append(o1).append("=").append(o2)
-            notFirst = true
-        }
-        return sb.toString()
-    }
-
-    private fun generateDatabaseURL() =
-        "jdbc:mariadb://${getEnvOrThrow("MARIADB_HOST")}/${getEnvOrThrow("MARIADB_NAME")}"
-
-    fun getConnection(): Connection =
-        try {
-            Driver().connect(generateDatabaseURL() + getProperties().toQuery(), getProperties())
-        } catch (e: Exception) {
-            throw RuntimeException("Failed to connect to database (Attempted to use url: '${generateDatabaseURL()}')", e)
-        }
-
-    fun Message.mentionsSelf(): Boolean = this.mentionedUserIds.contains(this.kord.selfId)
+    fun getConnection() = BotSecretConfig.config.database.getConnection()
 
     fun Interaction.optAny(name: String): Any? =
         when (this) {
@@ -177,5 +139,13 @@ object Util {
         }
         scheduleAtFixedRate(task, delay, period)
         return task
+    }
+
+    fun String.replaceWithMap(map: Map<String, *>): String {
+        var s = this
+        map.forEach { (key, value) ->
+            s = s.replace(key, value.toString())
+        }
+        return s
     }
 }

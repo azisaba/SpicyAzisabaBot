@@ -7,12 +7,13 @@ import dev.kord.rest.builder.interaction.GlobalMultiApplicationCommandBuilder
 import dev.kord.rest.builder.interaction.integer
 import dev.kord.rest.builder.interaction.string
 import net.azisaba.gravenbuilder.ProjectType
+import net.azisaba.spicyazisababot.config.secret.BotSecretConfig
 import net.azisaba.spicyazisababot.util.Util.optLong
 import net.azisaba.spicyazisababot.util.Util.optString
 
 object CustomBuildCommand : CommandHandler {
     override suspend fun canProcess(interaction: ApplicationCommandInteraction): Boolean =
-        !System.getenv("DOCKER_HOST").isNullOrBlank()
+        BotSecretConfig.config.dockerHost.isNotBlank()
 
     override suspend fun handle0(interaction: ApplicationCommandInteraction) {
         val url = interaction.optString("url")!!

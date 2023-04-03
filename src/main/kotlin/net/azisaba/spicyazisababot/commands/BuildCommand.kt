@@ -16,6 +16,7 @@ import kotlinx.coroutines.withContext
 import net.azisaba.gravenbuilder.GravenBuilder
 import net.azisaba.gravenbuilder.GravenBuilderConfig
 import net.azisaba.gravenbuilder.ProjectType
+import net.azisaba.spicyazisababot.config.secret.BotSecretConfig
 import net.azisaba.spicyazisababot.util.Util
 import net.azisaba.spicyazisababot.util.Util.optLong
 import net.azisaba.spicyazisababot.util.Util.optString
@@ -36,7 +37,7 @@ object BuildCommand : CommandHandler {
     private val repoPattern = "^https://github\\.com/([^/]+?)/([^/]+?)/?\$".toRegex()
 
     override suspend fun canProcess(interaction: ApplicationCommandInteraction): Boolean =
-        !System.getenv("DOCKER_HOST").isNullOrBlank()
+        BotSecretConfig.config.dockerHost.isNotBlank()
 
     override suspend fun handle0(interaction: ApplicationCommandInteraction) {
         val url = interaction.optString("url")!!
@@ -171,7 +172,7 @@ object BuildCommand : CommandHandler {
                 latch.countDown()
             }.start()
             val artifacts = GravenBuilderConfig()
-                .dockerHost(Util.getEnvOrThrow("DOCKER_HOST"))
+                .dockerHost(BotSecretConfig.config.dockerHost)
                 .onStdout { output += "$it\n" }
                 .onStderr { output += "$it\n" }
                 .onDebug { output += "[GravenBuilder] $it\n" }
@@ -372,8 +373,8 @@ object BuildCommand : CommandHandler {
     }
 
     private fun getGitHub(): GitHub =
-        System.getenv("GITHUB_TOKEN").let {
-            if (it == null) {
+        BotSecretConfig.config.githubToken.let {
+            if (it.isBlank()) {
                 GitHub.connectAnonymously()
             } else {
                 GitHub.connect(null, it)

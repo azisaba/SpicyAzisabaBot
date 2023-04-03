@@ -10,7 +10,7 @@ import dev.kord.rest.builder.interaction.attachment
 import dev.kord.rest.builder.interaction.string
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import net.azisaba.spicyazisababot.util.Constant
+import net.azisaba.spicyazisababot.config.BotConfig
 import net.azisaba.spicyazisababot.util.Util
 import net.azisaba.spicyazisababot.util.Util.optAttachments
 import net.azisaba.spicyazisababot.util.Util.optString
@@ -126,7 +126,7 @@ object UploadAttachmentCommand : CommandHandler {
                     content = """
                     処理が完了しました。
                     かかった時間: ${Instant.now().epochSecond - createdTime}秒
-                    ${Constant.MESSAGE_VIEWER_BASE_URL}/attachments/${attachmentData.id}/$newFilename$urlParam
+                    ${BotConfig.config.messageViewerBaseUrl}/attachments/${attachmentData.id}/$newFilename$urlParam
                 """.trimIndent()
                 }
             }

@@ -4,10 +4,8 @@ import dev.kord.common.entity.Snowflake
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class PermissionData(
+data class GlobalPermissionData(
     val id: Snowflake,
-    val type: PermissionType,
-    val guildId: Snowflake,
-    val node: String,
+    val node: GlobalPermissionNode,
     val value: Boolean,
 )

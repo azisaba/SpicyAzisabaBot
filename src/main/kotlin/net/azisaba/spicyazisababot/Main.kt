@@ -9,7 +9,6 @@ import dev.kord.core.event.gateway.ReadyEvent
 import dev.kord.core.event.guild.MemberJoinEvent
 import dev.kord.core.event.guild.MemberLeaveEvent
 import dev.kord.core.event.interaction.ApplicationCommandInteractionCreateEvent
-import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.core.on
 import dev.kord.gateway.Intent
 import dev.kord.gateway.Intents
@@ -19,6 +18,8 @@ import net.azisaba.spicyazisababot.commands.AddRolesCommand
 import net.azisaba.spicyazisababot.commands.BuildCommand
 import net.azisaba.spicyazisababot.commands.ChatGPTCommand
 import net.azisaba.spicyazisababot.commands.CheckGitHubCommand
+import net.azisaba.spicyazisababot.commands.CleanUserMessagesCommand
+import net.azisaba.spicyazisababot.commands.CommandHandler
 import net.azisaba.spicyazisababot.commands.CopyTableCommand
 import net.azisaba.spicyazisababot.commands.CountRoleMembersCommand
 import net.azisaba.spicyazisababot.commands.CreateAttachmentsTableCommand
@@ -26,7 +27,10 @@ import net.azisaba.spicyazisababot.commands.CreateImageCommand
 import net.azisaba.spicyazisababot.commands.CreateMessageCommand
 import net.azisaba.spicyazisababot.commands.CreateMessagesTableCommand
 import net.azisaba.spicyazisababot.commands.CustomBuildCommand
+import net.azisaba.spicyazisababot.commands.CustomCommand
+import net.azisaba.spicyazisababot.commands.CveCommand
 import net.azisaba.spicyazisababot.commands.EditMessageCommand
+import net.azisaba.spicyazisababot.commands.GlobalPermissionsCommand
 import net.azisaba.spicyazisababot.commands.LinkGitHubCommand
 import net.azisaba.spicyazisababot.commands.PermissionsCommand
 import net.azisaba.spicyazisababot.commands.StatsCommand
@@ -34,93 +38,84 @@ import net.azisaba.spicyazisababot.commands.ToDBCommand
 import net.azisaba.spicyazisababot.commands.TranslateRomajiCommand
 import net.azisaba.spicyazisababot.commands.UnlinkGitHubCommand
 import net.azisaba.spicyazisababot.commands.UploadAttachmentCommand
-import net.azisaba.spicyazisababot.commands.VoteCommand
-import net.azisaba.spicyazisababot.messages.CVEMessageHandler
-import net.azisaba.spicyazisababot.messages.RealProblemChannelHandler
-import net.azisaba.spicyazisababot.util.Constant
+import net.azisaba.spicyazisababot.config.BotConfig
+import net.azisaba.spicyazisababot.config.secret.BotSecretConfig
 import net.azisaba.spicyazisababot.util.Util
-
-private val messageHandlers = listOf(
-    CVEMessageHandler,
-    RealProblemChannelHandler,
-)
+import net.azisaba.spicyazisababot.util.Util.replaceWithMap
 
 @OptIn(PrivilegedIntent::class)
 suspend fun main() {
-    val client = Kord(Util.getEnvOrThrow("BOT_TOKEN"))
+    // load config
+    BotConfig
+    BotSecretConfig
+
+    // init client
+    val client = Kord(BotSecretConfig.config.token)
+
+    // builtin commands
+    val commands = mapOf(
+        "stats" to StatsCommand,
+        "translate-romaji" to TranslateRomajiCommand,
+        "countrolemembers" to CountRoleMembersCommand,
+        "permissions" to PermissionsCommand,
+        "build" to BuildCommand,
+        "custom-build" to CustomBuildCommand,
+        "add-roles" to AddRolesCommand,
+        "create-message" to CreateMessageCommand,
+        "edit-message" to EditMessageCommand,
+        "create-attachments-table" to CreateAttachmentsTableCommand,
+        "copy-table" to CopyTableCommand,
+        "create-messages-table" to CreateMessagesTableCommand,
+        "upload-attachment" to UploadAttachmentCommand,
+        "to-db" to ToDBCommand,
+        "link-github" to LinkGitHubCommand,
+        "unlink-github" to UnlinkGitHubCommand,
+        "check-github" to CheckGitHubCommand,
+        "chatgpt" to ChatGPTCommand,
+        "reply" to ChatGPTCommand,
+        "create-image" to CreateImageCommand,
+        "clean-user-messages" to CleanUserMessagesCommand,
+        "cve" to CveCommand,
+        "gpedit" to GlobalPermissionsCommand,
+    ) + BotConfig.config.customCommands.associate { it.name to CustomCommand(it) } // custom commands
+
+    fun getEnabledCommands(): Map<String, CommandHandler> =
+        commands.filterKeys { it !in BotConfig.config.disabledCommands }
+
+    // delete commands
+    /*
+    client.getGlobalApplicationCommands().collect {
+        if (it.name !in getEnabledCommands().keys) {
+            it.delete()
+        }
+    }
+    */
 
     client.createGlobalApplicationCommands {
-        StatsCommand.register(this)
-        VoteCommand.register(this)
-        TranslateRomajiCommand.register(this)
-        CountRoleMembersCommand.register(this)
-        PermissionsCommand.register(this)
-        BuildCommand.register(this)
-        CustomBuildCommand.register(this)
-        AddRolesCommand.register(this)
-        CreateMessageCommand.register(this)
-        EditMessageCommand.register(this)
-        CreateAttachmentsTableCommand.register(this)
-        CopyTableCommand.register(this)
-        CreateMessagesTableCommand.register(this)
-        UploadAttachmentCommand.register(this)
-        ToDBCommand.register(this)
-        LinkGitHubCommand.register(this)
-        UnlinkGitHubCommand.register(this)
-        CheckGitHubCommand.register(this)
-        ChatGPTCommand.register(this)
-        CreateImageCommand.register(this)
-//        CleanUserMessagesCommand.register(this)
+        getEnabledCommands().values.distinct().forEach { it.register(this) }
     }
 
     client.on<ApplicationCommandInteractionCreateEvent> {
         if (interaction.user.isBot) return@on
-        if (interaction.invokedCommandName == "stats") StatsCommand.handle(interaction)
-        if (interaction.invokedCommandName == "vote") VoteCommand.handle(interaction)
-        if (interaction.invokedCommandName == "translate-romaji") TranslateRomajiCommand.handle(interaction)
-        if (interaction.invokedCommandName == "countrolemembers") CountRoleMembersCommand.handle(interaction)
-        if (interaction.invokedCommandName == "permissions") PermissionsCommand.handle(interaction)
-        if (interaction.invokedCommandName == "build") BuildCommand.handle(interaction)
-        if (interaction.invokedCommandName == "custom-build") CustomBuildCommand.handle(interaction)
-        if (interaction.invokedCommandName == "add-roles") AddRolesCommand.handle(interaction)
-        if (interaction.invokedCommandName == "create-message") CreateMessageCommand.handle(interaction)
-        if (interaction.invokedCommandName == "edit-message") EditMessageCommand.handle(interaction)
-        if (interaction.invokedCommandName == "create-attachments-table") CreateAttachmentsTableCommand.handle(interaction)
-        if (interaction.invokedCommandName == "copy-table") CopyTableCommand.handle(interaction)
-        if (interaction.invokedCommandName == "create-messages-table") CreateMessagesTableCommand.handle(interaction)
-        if (interaction.invokedCommandName == "upload-attachment") UploadAttachmentCommand.handle(interaction)
-        if (interaction.invokedCommandName == "to-db") ToDBCommand.handle(interaction)
-        if (interaction.invokedCommandName == "link-github") LinkGitHubCommand.handle(interaction)
-        if (interaction.invokedCommandName == "unlink-github") UnlinkGitHubCommand.handle(interaction)
-        if (interaction.invokedCommandName == "check-github") CheckGitHubCommand.handle(interaction)
-        if (interaction.invokedCommandName == "chatgpt") ChatGPTCommand.handle(interaction)
-        if (interaction.invokedCommandName == "reply") ChatGPTCommand.handle(interaction)
-        if (interaction.invokedCommandName == "create-image") CreateImageCommand.handle(interaction)
-//        if (interaction.invokedCommandName == "clean-user-messages") CleanUserMessagesCommand.handle(interaction)
-    }
-
-    client.on<MessageCreateEvent> {
-        val handler = messageHandlers.findLast { it.canProcess(message) } ?: return@on
-        handler.handle(message)
+        getEnabledCommands().forEach { (name, command) ->
+            if (interaction.invokedCommandName == name) {
+                command.handle(interaction)
+            }
+        }
     }
 
     client.on<MemberJoinEvent> {
-        val id = System.getenv("WELCOME_CHANNEL_ID")
-        if (id.isNullOrBlank()) return@on
         if (member.isBot) return@on
-        val channel = client.getChannel(Snowflake(id)) ?: return@on
-        if (channel !is TextChannel) return@on
-        if (channel.guildId != member.guildId) return@on
-        channel.createMessage("""
-            |${member.mention}
-            |__新人運営のやることリスト__
-            |・規約を確認して同意する https://www.azisaba.net/operating-terms-and-conditions/
-            |・<#${Constant.SELF_INTRO_CHANNEL}>でPIN留めされたテンプレート通りに自己紹介を行う。
-            |・ディスコードのニックネームにMCIDを明記する（形式はほかの運営を参考に）
-            |
-            |続いて、参加していない場合は以下のグループに参加してください。
-            |
-        """.trimMargin() + System.getenv("INVITE_LINKS"))
+        for (config in BotConfig.config.welcomeMessages) {
+            if (config.channelId.isBlank()) continue
+            val channel = client.getChannel(Snowflake(config.channelId)) as? TextChannel ?: continue
+            if (channel.guildId != member.guildId) continue
+            val replaceMap = mapOf(
+                "{mention}" to member.mention,
+                "{tag}" to member.tag,
+            )
+            channel.createMessage(config.messageLines.joinToString("\n").replaceWithMap(replaceMap))
+        }
     }
 
     client.on<ReadyEvent> {
@@ -130,42 +125,34 @@ suspend fun main() {
     }
 
     client.on<MemberLeaveEvent> {
-        val channel = client.getChannel(Constant.LEAVE_LOG_CHANNEL) as? TextChannel
-        if (channel == null) {
-            println("Warning: Tried to get text channel ${Constant.LEAVE_LOG_CHANNEL} but the channel does not exist or is not a text channel.")
-            return@on
-        }
-        if (channel.guildId != guildId) return@on
-        val currentGitHubConnection = Util.getConnection().use { connection ->
-            connection.prepareStatement("SELECT `github_id` FROM `github` WHERE `discord_id` = ?").use { statement ->
-                statement.setString(1, user.id.toString())
-                statement.executeQuery().use { resultSet ->
-                    if (resultSet.next()) {
-                        resultSet.getString("github_id")
-                    } else {
-                        null
+        for (config in BotConfig.config.leaveMessages) {
+            if (config.channelId.isBlank()) continue
+            val channel = client.getChannel(Snowflake(config.channelId)) as? TextChannel ?: continue
+            if (channel.guildId != guildId) return@on
+            val currentGitHubConnection = Util.getConnection().use { connection ->
+                connection.prepareStatement("SELECT `github_id` FROM `github` WHERE `discord_id` = ?").use { statement ->
+                    statement.setString(1, user.id.toString())
+                    statement.executeQuery().use { resultSet ->
+                        if (resultSet.next()) {
+                            resultSet.getString("github_id")
+                        } else {
+                            null
+                        }
                     }
                 }
             }
+            val replaceMap = mutableMapOf(
+                "user.tag" to user.tag,
+                "user.id" to user.id,
+                "user.isBot" to user.isBot,
+                "github" to currentGitHubConnection,
+                "old.nickname" to old?.nickname,
+                "old.roleNames" to old?.roles?.toList()?.joinToString(", ") { it.name },
+                "old.roleIds" to old?.roleIds?.joinToString(", "),
+                "old.joinedAt.epochSeconds" to old?.joinedAt?.epochSeconds,
+            )
+            channel.createMessage(config.messageLines.joinToString("\n").replaceWithMap(replaceMap))
         }
-        channel.createMessage("""
-            :outbox_tray: `${user.tag}` <@${user.id}> (ID: ${user.id}, Is bot: ${user.isBot})
-            GitHub: `${currentGitHubConnection}`
-            
-            Nickname:
-            ```
-            ${old?.nickname}
-            ```
-            
-            Roles:
-            ```
-            ${old?.roles?.toList()?.joinToString(", ") { it.name }}
-            
-            (IDs: ${old?.roleIds?.joinToString(", ")})
-            ```
-            
-            Joined at: <t:${old?.joinedAt?.epochSeconds}> <t:${old?.joinedAt?.epochSeconds}:R>
-            """.trimIndent())
     }
 
     client.login {

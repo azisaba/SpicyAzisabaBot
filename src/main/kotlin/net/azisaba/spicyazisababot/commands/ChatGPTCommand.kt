@@ -12,19 +12,18 @@ import dev.kord.rest.builder.interaction.boolean
 import dev.kord.rest.builder.interaction.number
 import dev.kord.rest.builder.interaction.string
 import io.ktor.client.*
-import io.ktor.client.engine.*
 import io.ktor.client.engine.cio.*
-import io.ktor.client.plugins.*
 import io.ktor.client.request.*
 import io.ktor.client.request.forms.*
 import io.ktor.client.statement.*
-import io.ktor.http.*
 import io.ktor.utils.io.jvm.javaio.*
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
+import net.azisaba.spicyazisababot.config.secret.BotSecretConfig
+import net.azisaba.spicyazisababot.permission.GlobalPermissionNode
 import net.azisaba.spicyazisababot.permission.PermissionManager
 import net.azisaba.spicyazisababot.util.Util.modal
 import net.azisaba.spicyazisababot.util.Util.optBoolean
@@ -34,7 +33,7 @@ import net.azisaba.spicyazisababot.util.Util.optString
 import java.io.ByteArrayInputStream
 
 object ChatGPTCommand : CommandHandler {
-    private val conversations = mutableMapOf<Snowflake, MutableList<ContentWithRole>>() // user id to messages
+    private val conversations = mutableMapOf<Snowflake, ConversationData>() // user id to messages
     private val client = HttpClient(CIO) {
         engine {
             this.requestTimeout = 1000 * 60 * 10
@@ -46,7 +45,7 @@ object ChatGPTCommand : CommandHandler {
     override suspend fun handle0(interaction: ApplicationCommandInteraction) {
         // clear conversations if not reply
         if (interaction.invokedCommandName != "reply") {
-            conversations[interaction.user.id]?.clear()
+            conversations.remove(interaction.user.id)
         }
         // handle "text" in parameter
         val temperature = interaction.optDouble("temperature") ?: 1.0
@@ -55,7 +54,7 @@ object ChatGPTCommand : CommandHandler {
         val force = interaction.optBoolean("force") ?: false
         val systemPreset = interaction.optString("system-preset")
         val system = System.getenv("CHATGPT_SYSTEM_PRESET_$systemPreset") ?: interaction.optString("system")
-        val model = interaction.optString("model") ?: "gpt-3.5-turbo"
+        val model = interaction.optString("model")
         interaction.optString("text")?.apply {
             return handle(interaction, this, temperature, role, maxTokens, force, system, model)
         }
@@ -81,16 +80,56 @@ object ChatGPTCommand : CommandHandler {
         maxTokens: Long,
         force: Boolean,
         system: String?,
-        model: String,
+        modelNullable: String?,
     ) {
         val defer = interaction.deferPublicResponse()
+        val model = modelNullable ?: conversations[interaction.user.id]?.model ?: "gpt-3.5-turbo"
         try {
+            // Perform access check based on global permission.
+            // If user has permission of chatgpt.model.all, the user can use all models.
+            // Otherwise, the check is performed based on the model. (chatgpt.model.{model})
+            val allowAll = PermissionManager.globalCheck(interaction.user.id, GlobalPermissionNode.ChatGPTModelAll).value?.apply {
+                if (!this) {
+                    defer.respond { content = "このコマンドを使用する権限がありません。" }
+                    return
+                }
+            }
+            if (allowAll != true) {
+                val node = GlobalPermissionNode.nodeMap["chatgpt.model.$model"]
+                if (node == null) {
+                    defer.respond { content = "このModelを使用する権限がありません。" }
+                    return
+                }
+                if (PermissionManager.globalCheck(interaction.user.id, node).value != true) {
+                    defer.respond { content = "このModelを使用する権限がありません。" }
+                    return
+                }
+            }
+            interaction.channel.getGuildOrNull()?.let { guild ->
+                // Perform access check based on server permission.
+                // If user has permission of chatgpt.model.all, the user can use all models.
+                // Otherwise, the check is performed based on the model. (chatgpt.model.{model})
+                val allowAllOnServer = PermissionManager.check(guild.getMember(interaction.user.id), "chatgpt.model.all").value?.apply {
+                    if (!this) {
+                        defer.respond { content = "このコマンドを使用する権限がありません。" }
+                        return
+                    }
+                }
+                if (allowAllOnServer != true) {
+                    if (PermissionManager.check(guild.getMember(interaction.user.id), "chatgpt.model.$model").value != true) {
+                        defer.respond { content = "このModelを使用する権限がありません。`chatgpt.model.$model`もしくは`chatgpt.model.all`が必要です。" }
+                        return
+                    }
+                }
+            }
+            // check sanity
             val moderationResponse = client.post("https://api.openai.com/v1/moderations") {
                 setBody(LinkGitHubCommand.json.encodeToString(PostModerationBody(text)))
-                header("Authorization", "Bearer ${System.getenv("OPENAI_API_KEY")}")
+                header("Authorization", "Bearer ${BotSecretConfig.config.openAIApiKey}")
                 header("Content-Type", "application/json")
             }.bodyAsText().let { LinkGitHubCommand.json.decodeFromString(PostModerationResponse.serializer(), it) }
             val emoji = if (moderationResponse.results.any { it.flagged }) {
+                // message is flagged
                 if (!force) {
                     defer.respond {
                         content = "（入力された文章は不適切と判断されたため、生成されません）"
@@ -101,30 +140,38 @@ object ChatGPTCommand : CommandHandler {
             } else {
                 null
             }
-            val response = client.post("https://api.openai.com/v1/chat/completions") {
-                val thisMessage = ContentWithRole(role, text)
-                if (system != null) {
-                    conversations.computeIfAbsent(interaction.user.id) { mutableListOf() }
-                        .add(ContentWithRole("system", system))
+            val thisMessage = ContentWithRole(role, text)
+            if (system != null) {
+                conversations.computeIfAbsent(interaction.user.id) { ConversationData(model) }
+                    .conversation.add(ContentWithRole("system", system))
+            }
+            conversations.computeIfAbsent(interaction.user.id) { ConversationData(model) }
+                .conversation.add(thisMessage)
+            if (role == "assistant") {
+                defer.respond {
+                    content = text
                 }
-                conversations.computeIfAbsent(interaction.user.id) { mutableListOf() }.add(thisMessage)
+                return
+            }
+            // execute the api
+            val response = client.post("https://api.openai.com/v1/chat/completions") {
                 setBody(
                     LinkGitHubCommand.json.encodeToString(
                         PostBody(
                             model,
                             maxTokens.toInt(),
                             temperature,
-                            conversations[interaction.user.id] ?: error("conversation is null"),
+                            conversations[interaction.user.id]!!.conversation,
                         )
                     )
                 )
-                header("Authorization", "Bearer ${System.getenv("OPENAI_API_KEY")}")
+                header("Authorization", "Bearer ${BotSecretConfig.config.openAIApiKey}")
                 header("Content-Type", "application/json")
             }
             val body = LinkGitHubCommand.json.parseToJsonElement(response.bodyAsText())
             val choices = (body.jsonObject["choices"] ?: error("choices is not present in json: $body")).jsonArray
             val choice = LinkGitHubCommand.json.decodeFromJsonElement(ResponseChoice.serializer(), choices[0].jsonObject)
-            conversations.computeIfAbsent(interaction.user.id) { mutableListOf() }.add(choice.message)
+            conversations[interaction.user.id]!!.conversation.add(choice.message)
             val result = choice.message.content
             defer.respond {
                 content = if (result.length > 2000) {
@@ -150,6 +197,7 @@ object ChatGPTCommand : CommandHandler {
 
     override fun register(builder: GlobalMultiApplicationCommandBuilder) {
         val build: GlobalChatInputCreateBuilder.() -> Unit = {
+            dmPermission = false
             string("text", "文章を生成するためのテキストを入力してください。") {
                 required = false
             }
@@ -173,6 +221,7 @@ object ChatGPTCommand : CommandHandler {
             }
             string("model", "モデルを指定します") {
                 choice("GPT-3.5", "gpt-3.5-turbo")
+                choice("gpt-3.5-turbo-0301", "gpt-3.5-turbo-0301")
                 choice("GPT-4 (8k)", "gpt-4")
                 choice("GPT-4 (32k)", "gpt-4-32k")
             }
@@ -229,4 +278,10 @@ private data class ResponseChoice(
     val index: Int,
     @SerialName("finish_reason")
     val finishReason: String?
+)
+
+@Serializable
+private data class ConversationData(
+    val model: String,
+    val conversation: MutableList<ContentWithRole> = mutableListOf(),
 )

@@ -1,34 +1,36 @@
-package net.azisaba.spicyazisababot.messages
+package net.azisaba.spicyazisababot.commands
 
-import dev.kord.core.behavior.channel.createMessage
-import dev.kord.core.entity.Message
+import dev.kord.core.behavior.interaction.response.respond
+import dev.kord.core.entity.interaction.ApplicationCommandInteraction
+import dev.kord.rest.builder.interaction.GlobalMultiApplicationCommandBuilder
+import dev.kord.rest.builder.interaction.string
 import dev.kord.rest.builder.message.EmbedBuilder
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonObject
 import net.azisaba.spicyazisababot.cve.CVEResult
 import net.azisaba.spicyazisababot.util.Util
+import net.azisaba.spicyazisababot.util.Util.optString
 import net.azisaba.spicyazisababot.util.getObject
 import java.io.FileNotFoundException
 
-object CVEMessageHandler: MessageHandler {
-    override suspend fun canProcess(message: Message): Boolean = message.content.matches("^(?i)/CVE-\\d+-\\d+(/s)?$".toRegex())
+object CveCommand : CommandHandler {
+    override suspend fun canProcess(interaction: ApplicationCommandInteraction): Boolean = true
 
-    override suspend fun handle(message: Message) {
-        if (message.author?.isBot != false) return
-        val groups = "^(?i)/CVE-(\\d+)-(\\d+)(/s)?$".toRegex().matchEntire(message.content)?.groupValues ?: return
+    override suspend fun handle0(interaction: ApplicationCommandInteraction) {
+        val idString = interaction.optString("id") ?: return
+        val groups = "^(?i)(?:CVE-)?(\\d+)-(\\d+)(/s)?$".toRegex().matchEntire(idString)?.groupValues ?: return
         val year = groups[1].toInt()
         val number = groups[2].toInt()
         val short = groups[3].isNotEmpty()
+        val defer = interaction.deferPublicResponse()
         val text = try {
             Util.executeCachedTextRequest("https://services.nvd.nist.gov/rest/json/cve/1.0/CVE-$year-$number", 1000 * 60 * 60 * 2) // 2 hours
         } catch (e: FileNotFoundException) {
-            message.channel.createMessage("Unable to find vuln CVE-$year-$number")
+            defer.respond { content = "Unable to find vuln CVE-$year-$number" }
             return
         }
-        val obj = Json.decodeFromString<JsonObject>(text)
-        val result = obj.getObject("result")!!
-        val cve = CVEResult.read(result)
+        val obj = Json.parseToJsonElement(text).jsonObject
+        val cve = CVEResult.read(obj.getObject("result")!!.jsonObject)
         val embeds = mutableListOf<EmbedBuilder>()
         cve.items.forEach { item ->
             val builder = EmbedBuilder()
@@ -67,8 +69,17 @@ object CVEMessageHandler: MessageHandler {
             }
             embeds.add(builder)
         }
-        message.channel.createMessage {
-            this.embeds.addAll(embeds)
+        defer.respond {
+            this.embeds = embeds
+        }
+    }
+
+    override fun register(builder: GlobalMultiApplicationCommandBuilder) {
+        builder.input("cve", "Fetch CVE entry") {
+            string("id", "CVE-yyyy-xxxxx") {
+                required = true
+                minLength = 10
+            }
         }
     }
 }
