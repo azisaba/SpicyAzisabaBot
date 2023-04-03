@@ -80,7 +80,8 @@ object CreateImageCommand : CommandHandler {
     }
 
     override fun register(builder: GlobalMultiApplicationCommandBuilder) {
-        builder.input("create-image", "ChatGPTを使って文章を生成します。") {
+        builder.input("create-image", "ChatGPTを使って画像を生成します。") {
+            dmPermission = false
             string("prompt", "画像を生成するためのテキストを入力してください。") {
                 required = true
             }
