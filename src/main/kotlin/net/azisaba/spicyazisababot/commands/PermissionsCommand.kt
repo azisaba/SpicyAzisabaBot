@@ -153,7 +153,7 @@ object PermissionsCommand : CommandHandler {
                 }
                 subCommand("check", "Check the permission.") {
                     this.options = mutableListOf(
-                        UserBuilder("role", "The role to check the permission.").apply { this.required = true },
+                        RoleBuilder("role", "The role to check the permission.").apply { this.required = true },
                         StringChoiceBuilder("node", "The permission node to check.").apply {
                             this.required = true
                             this.maxLength = 255
@@ -162,7 +162,7 @@ object PermissionsCommand : CommandHandler {
                 }
                 subCommand("list", "List the permissions of a role.") {
                     this.options = mutableListOf(
-                        UserBuilder("role", "The role to list the permissions.").apply { this.required = true },
+                        RoleBuilder("role", "The role to list the permissions.").apply { this.required = true },
                         IntegerOptionBuilder("page", "The page to list.").apply {
                             this.required = false
                             this.minValue = 1
