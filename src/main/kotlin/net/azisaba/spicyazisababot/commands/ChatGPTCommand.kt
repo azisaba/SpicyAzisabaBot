@@ -25,6 +25,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
+import net.azisaba.spicyazisababot.permission.PermissionManager
 import net.azisaba.spicyazisababot.util.Util.modal
 import net.azisaba.spicyazisababot.util.Util.optBoolean
 import net.azisaba.spicyazisababot.util.Util.optDouble
@@ -54,8 +55,9 @@ object ChatGPTCommand : CommandHandler {
         val force = interaction.optBoolean("force") ?: false
         val systemPreset = interaction.optString("system-preset")
         val system = System.getenv("CHATGPT_SYSTEM_PRESET_$systemPreset") ?: interaction.optString("system")
+        val model = interaction.optString("model") ?: "gpt-3.5-turbo"
         interaction.optString("text")?.apply {
-            return handle(interaction, this, temperature, role, maxTokens, force, system)
+            return handle(interaction, this, temperature, role, maxTokens, force, system, model)
         }
 
         // or ask for text input
@@ -67,11 +69,20 @@ object ChatGPTCommand : CommandHandler {
                 }
             }
         }) {
-            handle(this, this.textInputs["text"]!!.value!!, temperature, role, maxTokens, force, system)
+            handle(this, this.textInputs["text"]!!.value!!, temperature, role, maxTokens, force, system, model)
         }
     }
 
-    private suspend fun handle(interaction: ActionInteraction, text: String, temperature: Double, role: String, maxTokens: Long, force: Boolean, system: String?) {
+    private suspend fun handle(
+        interaction: ActionInteraction,
+        text: String,
+        temperature: Double,
+        role: String,
+        maxTokens: Long,
+        force: Boolean,
+        system: String?,
+        model: String,
+    ) {
         val defer = interaction.deferPublicResponse()
         try {
             val moderationResponse = client.post("https://api.openai.com/v1/moderations") {
@@ -100,7 +111,7 @@ object ChatGPTCommand : CommandHandler {
                 setBody(
                     LinkGitHubCommand.json.encodeToString(
                         PostBody(
-                            "gpt-3.5-turbo",
+                            model,
                             maxTokens.toInt(),
                             temperature,
                             conversations[interaction.user.id] ?: error("conversation is null"),
@@ -159,6 +170,11 @@ object ChatGPTCommand : CommandHandler {
             }
             boolean("force", "flagされても文章を生成します。") {
                 required = false
+            }
+            string("model", "モデルを指定します") {
+                choice("GPT-3.5", "gpt-3.5-turbo")
+                choice("GPT-4 (8k)", "gpt-4")
+                choice("GPT-4 (32k)", "gpt-4-32k")
             }
         }
         builder.input("reply", "ChatGPTを使って文章を生成します。") {
