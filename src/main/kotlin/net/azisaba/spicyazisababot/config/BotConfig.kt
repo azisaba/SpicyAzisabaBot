@@ -17,6 +17,11 @@ import java.io.File
 
 @Serializable
 data class BotConfig(
+    @YamlComment(
+        "次回起動時にbot.ymlを更新するかどうかを指定します。",
+        "trueにした場合、次回起動時にbot.ymlは上書きされ、overwrite設定は自動的にfalseになります。",
+    )
+    var overwrite: Boolean = false,
     @YamlComment("discord-message-viewerのURLを指定します。(最後の'/'を除く)")
     val messageViewerBaseUrl: String = "https://messageviewer.azisaba.net",
     @YamlComment("無効にするコマンドを指定します。")
@@ -76,7 +81,10 @@ data class BotConfig(
         }
 
         init {
-            File("config/bot.yml").writeText(yaml.encodeToString(config))
+            if (config.overwrite) {
+                config.overwrite = false
+                File("config/bot.yml").writeText(yaml.encodeToString(config))
+            }
         }
     }
 }
