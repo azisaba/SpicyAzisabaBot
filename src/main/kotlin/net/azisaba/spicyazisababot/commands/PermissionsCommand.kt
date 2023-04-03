@@ -196,31 +196,51 @@ object PermissionsCommand : CommandHandler {
     }
 
     private suspend fun roleSet(interaction: ApplicationCommandInteraction, roleId: Snowflake, node: String, value: Boolean) {
-        PermissionManager.roleSet(interaction.channel.getGuildOrNull()!!.id, roleId, node, value)
+        val guild = interaction.channel.getGuildOrNull()!!
+        if (guild.everyoneRole.id == roleId) {
+            PermissionManager.roleSet(guild.id, Snowflake(0), node, value)
+        } else {
+            PermissionManager.roleSet(guild.id, roleId, node, value)
+        }
         interaction.respondPublic {
             content = "Set the permission node `$node` of role `$roleId` to `$value`."
         }
     }
 
     private suspend fun roleUnset(interaction: ApplicationCommandInteraction, roleId: Snowflake, node: String) {
-        PermissionManager.roleUnset(interaction.channel.getGuildOrNull()!!.id, roleId, node)
+        val guild = interaction.channel.getGuildOrNull()!!
+        if (guild.everyoneRole.id == roleId) {
+            PermissionManager.roleUnset(guild.id, Snowflake(0), node)
+        } else {
+            PermissionManager.roleUnset(guild.id, roleId, node)
+        }
         interaction.respondPublic {
             content = "Unset the permission node `$node` of role `$roleId`."
         }
     }
 
     private suspend fun roleCheck(interaction: ApplicationCommandInteraction, roleId: Snowflake, node: String) {
-        val value = PermissionManager.roleCheck(interaction.channel.getGuildOrNull()!!.id, roleId, node)
+        val guild = interaction.channel.getGuildOrNull()!!
+        val value = if (guild.everyoneRole.id == roleId) {
+            PermissionManager.roleCheck(guild.id, Snowflake(0), node)
+        } else {
+            PermissionManager.roleCheck(guild.id, roleId, node)
+        }
         interaction.respondPublic {
             content = "Role $roleId has permission node `$node` set to `$value`."
         }
     }
 
     private suspend fun memberOrRoleList(interaction: ApplicationCommandInteraction, type: PermissionType, entity: Snowflake, origPage: Int) {
+        val guild = interaction.channel.getGuildOrNull()!!
         val permissions = if (type == PermissionType.USER) {
-            PermissionManager.userList(interaction.channel.getGuildOrNull()!!.id, entity)
+            PermissionManager.userList(guild.id, entity)
         } else {
-            PermissionManager.roleList(interaction.channel.getGuildOrNull()!!.id, entity)
+            if (guild.everyoneRole.id == entity) {
+                PermissionManager.roleList(guild.id, Snowflake(0))
+            } else {
+                PermissionManager.roleList(guild.id, entity)
+            }
         }
         if (permissions.isEmpty()) {
             interaction.respondPublic {
