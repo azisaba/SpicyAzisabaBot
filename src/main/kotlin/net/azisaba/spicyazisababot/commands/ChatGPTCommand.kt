@@ -22,6 +22,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
+import net.azisaba.spicyazisababot.config.BotConfig
 import net.azisaba.spicyazisababot.config.secret.BotSecretConfig
 import net.azisaba.spicyazisababot.permission.GlobalPermissionNode
 import net.azisaba.spicyazisababot.permission.PermissionManager
@@ -53,7 +54,7 @@ object ChatGPTCommand : CommandHandler {
         val maxTokens = interaction.optLong("max_tokens") ?: 2000
         val force = interaction.optBoolean("force") ?: false
         val systemPreset = interaction.optString("system-preset")
-        val system = System.getenv("CHATGPT_SYSTEM_PRESET_$systemPreset") ?: interaction.optString("system")
+        val system = BotConfig.config.chatgptPresets[systemPreset] ?: interaction.optString("system")
         val model = interaction.optString("model")
         interaction.optString("text")?.apply {
             return handle(interaction, this, temperature, role, maxTokens, force, system, model)
@@ -235,9 +236,10 @@ object ChatGPTCommand : CommandHandler {
                 required = false
                 minLength = 1
             }
-            string("system-preset", "ぷりせっと") {
+            string("system-preset", "システムの指示のプリセット") {
                 required = false
                 minLength = 1
+                BotConfig.config.chatgptPresets.keys.forEach { choice(it, it) }
             }
         }
     }

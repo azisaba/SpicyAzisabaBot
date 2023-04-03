@@ -25,6 +25,8 @@ data class BotConfig(
     val welcomeMessages: List<WelcomeMessageConfig> = listOf(WelcomeMessageConfig()),
     @YamlComment("退出時のメッセージを指定します。")
     val leaveMessages: List<LeaveMessageConfig> = listOf(LeaveMessageConfig()),
+    @YamlComment("/chatgptのsystem-presetで使用できるプリセットを設定します。")
+    val chatgptPresets: Map<String, String> = mutableMapOf("assistant" to "You are a helpful assistant."),
     val customCommands: List<CustomCommandDefinition> = listOf(
         CustomCommandDefinition(
             "vote",
