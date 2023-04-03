@@ -112,7 +112,7 @@ object LinkGitHubCommand : CommandHandler {
                         }
                         notifyWebhook(
                             interaction.kord,
-                            "${interaction.user.mention} (ID: `${interaction.id}`)がGitHubアカウント(`${user.login}`)を連携しました。"
+                            "${interaction.user.mention} (ID: `${interaction.user.id}`)がGitHubアカウント(`${user.login}`)を連携しました。"
                         )
                     } catch (e: Exception) {
                         cancel()
