@@ -128,7 +128,8 @@ suspend fun main() {
         for (config in BotConfig.config.leaveMessages) {
             if (config.channelId.isBlank()) continue
             val channel = client.getChannel(Snowflake(config.channelId)) as? TextChannel ?: continue
-            if (channel.guildId != guildId) return@on
+            val guildIds = config.guildIds ?: listOf(channel.guildId)
+            if (guildId !in guildIds) return@on
             val currentGitHubConnection = Util.getConnection().use { connection ->
                 connection.prepareStatement("SELECT `github_id` FROM `github` WHERE `discord_id` = ?").use { statement ->
                     statement.setString(1, user.id.toString())

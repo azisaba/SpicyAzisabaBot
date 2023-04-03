@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
 data class LeaveMessageConfig(
     val excludeBot: Boolean = false,
     @YamlComment("対象とするサーバーIDを指定します(Stringのリスト)。nullの場合はchannelIdから取得されるギルドが自動的に使用されます。")
-    val guildIds: List<String> = listOf(),
+    val guildIds: List<String>? = null,
     @YamlComment("退出時にメッセージが送信されるチャンネルを指定します。(チャンネルからサーバーも同時に指定されます)")
     val channelId: String = "",
     @YamlComment(
