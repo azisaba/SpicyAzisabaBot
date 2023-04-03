@@ -41,12 +41,10 @@ object UploadAttachmentCommand : CommandHandler {
         }
         val attachment = interaction.optAttachments().getOrNull(0)
         if (attachment != null) {
-            /*
             if (attachment.size > MAX_FILE_SIZE) {
                 interaction.respondEphemeral { content = "ファイルの大きさは最大100MBです。" }
                 return
             }
-            */
             val attachmentData = Attachment(attachment.id.value.toLong(), attachment.url, attachment.filename)
             uploadAttachment(interaction, algorithm, attachmentData)
         }
@@ -136,6 +134,7 @@ object UploadAttachmentCommand : CommandHandler {
     override fun register(builder: GlobalMultiApplicationCommandBuilder) {
         builder.input("upload-attachment", "Upload an attachment") {
             description(Locale.JAPANESE, "ファイルをアップロード")
+            dmPermission = false
 
             string("url", "URL of the attachment") {
                 description(Locale.JAPANESE, "ファイルのURL")
