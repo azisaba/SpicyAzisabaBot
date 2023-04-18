@@ -13,12 +13,17 @@ import dev.kord.core.entity.interaction.ModalSubmitInteraction
 import dev.kord.core.event.interaction.ModalSubmitInteractionCreateEvent
 import dev.kord.core.on
 import dev.kord.rest.builder.interaction.ModalBuilder
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import net.azisaba.spicyazisababot.config.secret.BotSecretConfig
+import java.net.HttpURLConnection
 import java.net.URL
 import java.util.Timer
 import java.util.TimerTask
@@ -58,9 +63,11 @@ object Util {
                     ?.value
                     ?.value
                     ?.value
+
             is ModalSubmitInteraction ->
                 this.textInputs[name]?.value
                     ?: this.data.data.options.value?.find { it.name == name }?.value?.value?.value
+
             else -> null
         }
 
@@ -101,7 +108,11 @@ object Util {
     fun Optional<List<CommandArgument<*>>>.optSnowflake(name: String) = optAny(name) as Snowflake?
     fun Optional<List<CommandArgument<*>>>.optLong(name: String) = optAny(name) as Long?
 
-    suspend fun ModalParentInteractionBehavior.modal(title: String, modalBuilder: ModalBuilder.() -> Unit, action: suspend ModalSubmitInteraction.() -> Unit) {
+    suspend fun ModalParentInteractionBehavior.modal(
+        title: String,
+        modalBuilder: ModalBuilder.() -> Unit,
+        action: suspend ModalSubmitInteraction.() -> Unit
+    ) {
         val uuid = UUID.randomUUID().toString()
         var jobReference by AtomicReference<Job>()
         var cancelJobReference by AtomicReference<Job>()
@@ -129,7 +140,11 @@ object Util {
     operator fun <V> AtomicReference<V>.setValue(thisRef: AtomicReference<V>?, property: KProperty<*>, value: V?) =
         set(value)
 
-    inline fun Timer.scheduleAtFixedRateBlocking(delay: Long, period: Long, crossinline action: suspend TimerTask.() -> Unit): TimerTask {
+    inline fun Timer.scheduleAtFixedRateBlocking(
+        delay: Long,
+        period: Long,
+        crossinline action: suspend TimerTask.() -> Unit
+    ): TimerTask {
         val task = object : TimerTask() {
             override fun run() {
                 runBlocking {
@@ -148,4 +163,35 @@ object Util {
         }
         return s
     }
+
+    fun createPostEventsFlow(url: String, body: String, headers: Map<String, String> = emptyMap()): Flow<EventData> =
+        flow {
+            val conn = (URL(url).openConnection() as HttpURLConnection).also {
+                headers.forEach { (key, value) -> it.setRequestProperty(key, value) }
+                it.setRequestProperty("Accept", "text/event-stream")
+                it.doInput = true
+                it.doOutput = true
+            }
+
+            conn.connect()
+
+            conn.outputStream.write(body.toByteArray())
+
+            val reader = conn.inputStream.bufferedReader()
+
+            var event = EventData()
+
+            while (true) {
+                val line = reader.readLine() ?: break
+
+                when {
+                    line.startsWith("event:") -> event = event.copy(name = line.substring(6).trim())
+                    line.startsWith("data:") -> event = event.copy(data = line.substring(5).trim())
+                    line.isEmpty() -> {
+                        emit(event)
+                        event = EventData()
+                    }
+                }
+            }
+        }.flowOn(Dispatchers.IO)
 }

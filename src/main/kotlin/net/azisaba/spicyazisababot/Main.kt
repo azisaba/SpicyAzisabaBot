@@ -1,4 +1,5 @@
 @file:JvmName("MainKt")
+
 package net.azisaba.spicyazisababot
 
 import dev.kord.common.entity.Snowflake
@@ -13,6 +14,8 @@ import dev.kord.core.on
 import dev.kord.gateway.Intent
 import dev.kord.gateway.Intents
 import dev.kord.gateway.PrivilegedIntent
+import io.ktor.client.*
+import io.ktor.client.engine.okhttp.*
 import kotlinx.coroutines.flow.toList
 import net.azisaba.spicyazisababot.commands.AddRolesCommand
 import net.azisaba.spicyazisababot.commands.BuildCommand
@@ -50,7 +53,21 @@ suspend fun main() {
     BotSecretConfig
 
     // init client
-    val client = Kord(BotSecretConfig.config.token)
+    val client = Kord(BotSecretConfig.config.token) {
+        this.httpClient = HttpClient(OkHttp) {
+            engine {
+                config {
+                    followRedirects(true)
+                }
+            }
+            /*
+            install(Logging) {
+                logger = Logger.DEFAULT
+                level = LogLevel.INFO
+            }
+            */
+        }
+    }
 
     // builtin commands
     val commands = mapOf(
@@ -131,16 +148,17 @@ suspend fun main() {
             val guildIds = config.guildIds ?: listOf(channel.guildId)
             if (guildId !in guildIds) return@on
             val currentGitHubConnection = Util.getConnection().use { connection ->
-                connection.prepareStatement("SELECT `github_id` FROM `github` WHERE `discord_id` = ?").use { statement ->
-                    statement.setString(1, user.id.toString())
-                    statement.executeQuery().use { resultSet ->
-                        if (resultSet.next()) {
-                            resultSet.getString("github_id")
-                        } else {
-                            null
+                connection.prepareStatement("SELECT `github_id` FROM `github` WHERE `discord_id` = ?")
+                    .use { statement ->
+                        statement.setString(1, user.id.toString())
+                        statement.executeQuery().use { resultSet ->
+                            if (resultSet.next()) {
+                                resultSet.getString("github_id")
+                            } else {
+                                null
+                            }
                         }
                     }
-                }
             }
             val replaceMap = mutableMapOf(
                 "{user.tag}" to user.tag,

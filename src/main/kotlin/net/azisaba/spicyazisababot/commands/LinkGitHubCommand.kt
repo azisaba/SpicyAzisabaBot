@@ -12,6 +12,7 @@ import io.ktor.client.*
 import io.ktor.client.engine.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.*
+import io.ktor.client.plugins.logging.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
@@ -40,6 +41,10 @@ object LinkGitHubCommand : CommandHandler {
                     header(HttpHeaders.ProxyAuthorization, "Basic $proxyAuthorization")
                 }
             }
+        }
+        install(Logging) {
+            logger = Logger.DEFAULT
+            level = LogLevel.INFO
         }
     }
 

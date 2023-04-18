@@ -8,6 +8,7 @@ import dev.kord.rest.builder.interaction.number
 import dev.kord.rest.builder.interaction.string
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
+import io.ktor.client.plugins.logging.*
 import io.ktor.client.request.*
 import io.ktor.client.request.forms.*
 import io.ktor.client.statement.*
@@ -24,6 +25,10 @@ object CreateImageCommand : CommandHandler {
     private val client = HttpClient(CIO) {
         engine {
             this.requestTimeout = 1000 * 60 * 10
+        }
+        install(Logging) {
+            logger = Logger.DEFAULT
+            level = LogLevel.INFO
         }
     }
 

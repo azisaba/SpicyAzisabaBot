@@ -160,7 +160,7 @@ object BuildCommand : CommandHandler {
                             msg.edit {
                                 content =
                                     ":hourglass: ビルド中...\n経過時間: ${(System.currentTimeMillis() - startedAt) / 1000}s\n```\n${
-                                        trimOutput(output)
+                                        trimOutput(output, 1600)
                                     }\n```"
                             }
                             if (completed.get()) {
@@ -359,11 +359,11 @@ object BuildCommand : CommandHandler {
         }
     }
 
-    private fun trimOutput(output: String): String {
+    fun trimOutput(output: String, maxStringLength: Int = 1900): String {
         var chars = 0
         val lines = mutableListOf<String>()
         output.lines().reversed().forEach { line ->
-            if (chars + line.length > 1600) {
+            if (chars + line.length > maxStringLength) {
                 return lines.reversed().joinToString("\n")
             }
             chars += line.length
