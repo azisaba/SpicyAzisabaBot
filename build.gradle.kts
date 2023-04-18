@@ -23,11 +23,6 @@ dependencies {
     implementation("org.eclipse.jgit:org.eclipse.jgit:6.2.0.202206071550-r")
     implementation("org.kohsuke:github-api:1.308")
     implementation("com.charleskorn.kaml:kaml:0.53.0")
-    implementation("io.ktor:ktor-client-cio-jvm:2.2.4")
-    implementation("io.ktor:ktor-client-logging:2.2.4")
-    implementation("io.ktor:ktor-client-logging-jvm:2.2.4")
-    implementation("io.ktor:ktor-client-java:2.2.4")
-    implementation("io.ktor:ktor-client-okhttp-jvm:2.2.4")
 }
 
 tasks {

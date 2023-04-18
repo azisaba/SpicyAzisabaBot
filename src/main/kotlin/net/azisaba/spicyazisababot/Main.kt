@@ -14,8 +14,6 @@ import dev.kord.core.on
 import dev.kord.gateway.Intent
 import dev.kord.gateway.Intents
 import dev.kord.gateway.PrivilegedIntent
-import io.ktor.client.*
-import io.ktor.client.engine.okhttp.*
 import kotlinx.coroutines.flow.toList
 import net.azisaba.spicyazisababot.commands.AddRolesCommand
 import net.azisaba.spicyazisababot.commands.BuildCommand
@@ -53,21 +51,7 @@ suspend fun main() {
     BotSecretConfig
 
     // init client
-    val client = Kord(BotSecretConfig.config.token) {
-        this.httpClient = HttpClient(OkHttp) {
-            engine {
-                config {
-                    followRedirects(true)
-                }
-            }
-            /*
-            install(Logging) {
-                logger = Logger.DEFAULT
-                level = LogLevel.INFO
-            }
-            */
-        }
-    }
+    val client = Kord(BotSecretConfig.config.token)
 
     // builtin commands
     val commands = mapOf(
