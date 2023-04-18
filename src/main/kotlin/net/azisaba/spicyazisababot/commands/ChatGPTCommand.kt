@@ -181,6 +181,7 @@ object ChatGPTCommand : CommandHandler {
                         temperature,
                         conversations[interaction.user.id]!!.conversation,
                         true,
+                        interaction.user.id.toString(),
                     )
                 ),
                 mapOf(
@@ -296,6 +297,7 @@ private data class PostBody(
     val temperature: Double,
     val messages: List<ContentWithRole>,
     val stream: Boolean,
+    val user: String?,
 )
 
 @Serializable

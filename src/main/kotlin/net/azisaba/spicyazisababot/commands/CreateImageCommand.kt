@@ -48,7 +48,15 @@ object CreateImageCommand : CommandHandler {
             }
             val response = client.post("https://api.openai.com/v1/images/generations") {
                 setBody(
-                    LinkGitHubCommand.json.encodeToString(CreateImageRequest(prompt, n.toInt(), size, "b64_json"))
+                    LinkGitHubCommand.json.encodeToString(
+                        CreateImageRequest(
+                            prompt,
+                            n.toInt(),
+                            size,
+                            "b64_json",
+                            interaction.user.id.toString(),
+                        )
+                    )
                 )
                 header("Authorization", "Bearer ${System.getenv("OPENAI_API_KEY")}")
                 header("Content-Type", "application/json")
@@ -107,6 +115,7 @@ private data class CreateImageRequest(
     val size: String = "1024x1024",
     @SerialName("response_format")
     val responseFormat: String,
+    val user: String?,
 )
 
 @Serializable
