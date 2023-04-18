@@ -143,14 +143,14 @@ suspend fun main() {
                 }
             }
             val replaceMap = mutableMapOf(
-                "user.tag" to user.tag,
-                "user.id" to user.id,
-                "user.isBot" to user.isBot,
-                "github" to currentGitHubConnection,
-                "old.nickname" to old?.nickname,
-                "old.roleNames" to old?.roles?.toList()?.joinToString(", ") { it.name },
-                "old.roleIds" to old?.roleIds?.joinToString(", "),
-                "old.joinedAt.epochSeconds" to old?.joinedAt?.epochSeconds,
+                "{user.tag}" to user.tag,
+                "{user.id}" to user.id,
+                "{user.isBot}" to user.isBot,
+                "{github}" to currentGitHubConnection,
+                "{old.nickname}" to old?.nickname,
+                "{old.roleNames}" to old?.roles?.toList()?.joinToString(", ") { it.name },
+                "{old.roleIds}" to old?.roleIds?.joinToString(", "),
+                "{old.joinedAt.epochSeconds}" to old?.joinedAt?.epochSeconds,
             )
             channel.createMessage(config.messageLines.joinToString("\n").replaceWithMap(replaceMap))
         }
