@@ -177,6 +177,10 @@ object Util {
 
             conn.outputStream.write(body.toByteArray())
 
+            if (conn.responseCode !in 200..399) {
+                error("Request failed with ${conn.responseCode}: ${conn.errorStream.bufferedReader().readText()}")
+            }
+
             val reader = conn.inputStream.bufferedReader()
 
             var event = EventData()
