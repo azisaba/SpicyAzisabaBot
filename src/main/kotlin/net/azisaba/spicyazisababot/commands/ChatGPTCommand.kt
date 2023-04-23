@@ -12,6 +12,7 @@ import dev.kord.rest.builder.interaction.GlobalMultiApplicationCommandBuilder
 import dev.kord.rest.builder.interaction.boolean
 import dev.kord.rest.builder.interaction.number
 import dev.kord.rest.builder.interaction.string
+import dev.kord.rest.builder.message.modify.embed
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.request.*
@@ -190,16 +191,23 @@ object ChatGPTCommand : CommandHandler {
                 ),
             ).collect {
                 if (it.data == "[DONE]") {
-                    if (content.length > 2000) {
-                        msg.edit {
-                            content = "（生成された文章が2000文字を超えたため、ファイルとして送信します。）"
-                            ByteArrayInputStream(content.toByteArray()).use { stream ->
-                                addFile("output.md", ChannelProvider { stream.toByteReadChannel() })
+                    msg.edit {
+                        if (content.length > 2000) {
+                            this.content = null
+                        } else {
+                            this.content = content
+                        }
+                        if (content.length > 4000) {
+                            embed {
+                                description = "（生成された文章が4000文字を超えたため、ファイルとして送信します。）"
+                            }
+                        } else if (content.length > 2000) {
+                            embed {
+                                description = content
                             }
                         }
-                    } else {
-                        msg.edit {
-                            this.content = content
+                        ByteArrayInputStream(content.toByteArray()).use { stream ->
+                            addFile("output.md", ChannelProvider { stream.toByteReadChannel() })
                         }
                     }
                     msg.message.deleteOwnReaction(fetchingReaction)
@@ -208,10 +216,18 @@ object ChatGPTCommand : CommandHandler {
                 }
                 val response = LinkGitHubCommand.json.decodeFromString<StreamResponse>(it.data)
                 content += response.choices[0].delta.content
-                if (content.length in 1..2000 && System.currentTimeMillis() - (lastUpdated[msg.token] ?: 0) > 500) {
-                    lastUpdated[msg.token] = System.currentTimeMillis()
+                if (System.currentTimeMillis() - (lastUpdated[msg.token] ?: 0) < 500) return@collect
+                lastUpdated[msg.token] = System.currentTimeMillis()
+                if (content.length in 1..2000) {
                     msg.edit {
-                        this.content = BuildCommand.trimOutput(content, 2000)
+                        this.content = content
+                    }
+                } else if (content.isNotEmpty()) {
+                    msg.edit {
+                        this.content = null
+                        embed {
+                            description = BuildCommand.trimOutput(content, 4000)
+                        }
                     }
                 }
             }

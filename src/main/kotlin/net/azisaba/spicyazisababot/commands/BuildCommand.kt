@@ -359,15 +359,15 @@ object BuildCommand : CommandHandler {
         }
     }
 
-    fun trimOutput(output: String, maxStringLength: Int = 1900): String {
+    fun trimOutput(output: String, maxStringLength: Int = 1900, linePrefix: String = ""): String {
         var chars = 0
         val lines = mutableListOf<String>()
         output.lines().reversed().forEach { line ->
-            if (chars + line.length > maxStringLength) {
+            if ((chars + linePrefix.length + line.length) > maxStringLength) {
                 return lines.reversed().joinToString("\n")
             }
-            chars += line.length
-            lines.add(line)
+            chars += linePrefix.length + line.length
+            lines.add(linePrefix + line)
         }
         return lines.reversed().joinToString("\n")
     }
