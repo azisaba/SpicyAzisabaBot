@@ -197,9 +197,9 @@ object ChatGPTCommand : CommandHandler {
                         } else {
                             this.content = content
                         }
-                        if (content.length > 4000) {
+                        if (content.length > 4096) {
                             embed {
-                                description = "（生成された文章が4000文字を超えたため、ファイルとして送信します。）"
+                                description = "（生成された文章が4096文字を超えたため、ファイルとして送信します。）"
                             }
                         } else if (content.length > 2000) {
                             embed {
@@ -226,7 +226,7 @@ object ChatGPTCommand : CommandHandler {
                     msg.edit {
                         this.content = null
                         embed {
-                            description = BuildCommand.trimOutput(content, 4000)
+                            description = BuildCommand.trimOutput(content, 4096)
                         }
                     }
                 }
