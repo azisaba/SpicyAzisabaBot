@@ -16,6 +16,7 @@ import kotlinx.coroutines.withContext
 import net.azisaba.gravenbuilder.GravenBuilder
 import net.azisaba.gravenbuilder.GravenBuilderConfig
 import net.azisaba.gravenbuilder.ProjectType
+import net.azisaba.spicyazisababot.config.BotConfig
 import net.azisaba.spicyazisababot.config.secret.BotSecretConfig
 import net.azisaba.spicyazisababot.util.Util
 import net.azisaba.spicyazisababot.util.Util.optLong
@@ -191,7 +192,7 @@ object BuildCommand : CommandHandler {
                         return@map null
                     }
                     val artifactUrl =
-                        "${System.getenv("MESSAGE_VIEWER_BASE_URL")}/attachments/$artifactAttachmentId/$artifactFileName"
+                        "${BotConfig.config.messageViewerBaseUrl}/attachments/$artifactAttachmentId/$artifactFileName"
                     val insertArtifact =
                         connection.prepareStatement("INSERT INTO `attachments` VALUES (?, ?, ?, ?, ?, ?)")
                     insertArtifact.setString(1, "0") // message id
@@ -210,7 +211,7 @@ object BuildCommand : CommandHandler {
                 val buildLogAttachmentId = "gb${System.currentTimeMillis()}-${counter.getAndIncrement()}"
                 val buildLogFileName = "_build-log.txt"
                 val buildLogUrl =
-                    "${System.getenv("MESSAGE_VIEWER_BASE_URL")}/attachments/$buildLogAttachmentId/$buildLogFileName"
+                    "${BotConfig.config.messageViewerBaseUrl}/attachments/$buildLogAttachmentId/$buildLogFileName"
                 val insertBuildLog = connection.prepareStatement("INSERT INTO `attachments` VALUES (?, ?, ?, ?, ?, ?)")
                 insertBuildLog.setString(1, "0") // message id
                 insertBuildLog.setString(2, buildLogAttachmentId)
@@ -245,7 +246,7 @@ object BuildCommand : CommandHandler {
                     output += "[SpicyAzisabaBot] Uploading build log\n"
                     val buildLogAttachmentId = "gb${System.currentTimeMillis()}-${counter.getAndIncrement()}"
                     val buildLogFileName = "_build-log.txt"
-                    val buildLogUrl = "${System.getenv("MESSAGE_VIEWER_BASE_URL")}/attachments/$buildLogAttachmentId/$buildLogFileName"
+                    val buildLogUrl = "${BotConfig.config.messageViewerBaseUrl}/attachments/$buildLogAttachmentId/$buildLogFileName"
                     val insertBuildLog = connection.prepareStatement("INSERT INTO `attachments` VALUES (?, ?, ?, ?, ?, ?)")
                     insertBuildLog.setString(1, "0") // message id
                     insertBuildLog.setString(2, buildLogAttachmentId)

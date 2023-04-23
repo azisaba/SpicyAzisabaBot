@@ -46,6 +46,9 @@ import net.azisaba.spicyazisababot.util.Util.replaceWithMap
 
 @OptIn(PrivilegedIntent::class)
 suspend fun main() {
+    // headless mode
+    System.setProperty("java.awt.headless", "true")
+
     // load config
     BotConfig
     BotSecretConfig
