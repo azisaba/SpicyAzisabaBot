@@ -6,6 +6,7 @@ enum class GlobalPermissionNode(val node: String) {
     ChatGPTModelGPT35("chatgpt.model.gpt-3.5-turbo"),
     ChatGPTModelGPT4("chatgpt.model.gpt-4"),
     ChatGPTModelGPT4Context32k("chatgpt.model.gpt-4-32k"),
+    ChatGPTInDM("chatgpt.dm"),
     ;
 
     companion object {

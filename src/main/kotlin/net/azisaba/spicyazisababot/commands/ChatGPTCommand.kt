@@ -87,6 +87,16 @@ object ChatGPTCommand : CommandHandler {
         modelNullable: String?,
     ) {
         val defer = interaction.deferPublicResponse()
+
+        // check if we're running in DMs
+        if (interaction.channel.getGuildOrNull() == null) {
+            val allowedInDM = PermissionManager.globalCheck(interaction.user.id, GlobalPermissionNode.ChatGPTInDM).value ?: false
+            if (!allowedInDM) {
+                defer.respond { content = "このコマンドを使用する権限がありません。" }
+                return
+            }
+        }
+
         val model = modelNullable ?: conversations[interaction.user.id]?.model ?: "gpt-3.5-turbo"
         val fetchingReaction = ReactionEmoji.Unicode("♻")
         try {
@@ -100,7 +110,7 @@ object ChatGPTCommand : CommandHandler {
                         return
                     }
                 }
-            if (allowAll != true) {
+            if (allowAll == null) {
                 val node = GlobalPermissionNode.nodeMap["chatgpt.model.$model"]
                 if (node == null) {
                     defer.respond { content = "このModelを使用する権限がありません。" }
@@ -241,7 +251,6 @@ object ChatGPTCommand : CommandHandler {
 
     override fun register(builder: GlobalMultiApplicationCommandBuilder) {
         val build: GlobalChatInputCreateBuilder.() -> Unit = {
-            dmPermission = false
             string("text", "文章を生成するためのテキストを入力してください。") {
                 required = false
             }
