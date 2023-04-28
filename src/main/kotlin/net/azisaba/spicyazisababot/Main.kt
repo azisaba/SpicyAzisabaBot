@@ -17,6 +17,7 @@ import dev.kord.gateway.PrivilegedIntent
 import kotlinx.coroutines.flow.toList
 import net.azisaba.spicyazisababot.commands.AddRolesCommand
 import net.azisaba.spicyazisababot.commands.BuildCommand
+import net.azisaba.spicyazisababot.commands.ChatChainCommand
 import net.azisaba.spicyazisababot.commands.ChatGPTCommand
 import net.azisaba.spicyazisababot.commands.CheckGitHubCommand
 import net.azisaba.spicyazisababot.commands.CleanUserMessagesCommand
@@ -81,6 +82,7 @@ suspend fun main() {
         "clean-user-messages" to CleanUserMessagesCommand,
         "cve" to CveCommand,
         "gpedit" to GlobalPermissionsCommand,
+        "chatchain" to ChatChainCommand,
     ) + BotConfig.config.customCommands.associate { it.name to CustomCommand(it) } // custom commands
 
     fun getEnabledCommands(): Map<String, CommandHandler> =

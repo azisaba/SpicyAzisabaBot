@@ -1,13 +1,11 @@
 package net.azisaba.spicyazisababot.commands
 
-import dev.kord.common.entity.Snowflake
 import dev.kord.common.entity.TextInputStyle
 import dev.kord.core.behavior.interaction.response.edit
 import dev.kord.core.behavior.interaction.response.respond
 import dev.kord.core.entity.ReactionEmoji
 import dev.kord.core.entity.interaction.ActionInteraction
 import dev.kord.core.entity.interaction.ApplicationCommandInteraction
-import dev.kord.rest.builder.interaction.GlobalChatInputCreateBuilder
 import dev.kord.rest.builder.interaction.GlobalMultiApplicationCommandBuilder
 import dev.kord.rest.builder.interaction.boolean
 import dev.kord.rest.builder.interaction.number
@@ -19,8 +17,6 @@ import io.ktor.client.request.*
 import io.ktor.client.request.forms.*
 import io.ktor.client.statement.*
 import io.ktor.utils.io.jvm.javaio.*
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import net.azisaba.spicyazisababot.config.BotConfig
@@ -35,8 +31,7 @@ import net.azisaba.spicyazisababot.util.Util.optLong
 import net.azisaba.spicyazisababot.util.Util.optString
 import java.io.ByteArrayInputStream
 
-object ChatGPTCommand : CommandHandler {
-    private val conversations = mutableMapOf<Snowflake, ConversationData>() // user id to messages
+object ChatChainCommand : CommandHandler {
     private val client = HttpClient(CIO) {
         engine {
             this.requestTimeout = 1000 * 60 * 10
@@ -47,20 +42,17 @@ object ChatGPTCommand : CommandHandler {
     override suspend fun canProcess(interaction: ApplicationCommandInteraction): Boolean = true
 
     override suspend fun handle0(interaction: ApplicationCommandInteraction) {
-        // clear conversations if not reply
-        if (interaction.invokedCommandName != "reply") {
-            conversations.remove(interaction.user.id)
-        }
-        // handle "text" in parameter
         val temperature = interaction.optDouble("temperature") ?: 1.0
-        val role = interaction.optString("role") ?: "user"
         val maxTokens = interaction.optLong("max_tokens") ?: 2000
         val force = interaction.optBoolean("force") ?: false
-        val systemPreset = interaction.optString("system-preset")
-        val system = BotConfig.config.chatgptPresets[systemPreset] ?: interaction.optString("system")
+        val systemPreset = interaction.optString("system-preset-override")
+        val system =
+            BotConfig.config.chatgptPresets[systemPreset]
+                ?: interaction.optString("system-override")
+                ?: BotConfig.config.chatChain.prompt
         val model = interaction.optString("model")
         interaction.optString("text")?.apply {
-            return handle(interaction, this, temperature, role, maxTokens, force, system, model)
+            return handle(interaction, this, temperature, maxTokens, force, system, model)
         }
 
         // or ask for text input
@@ -72,7 +64,7 @@ object ChatGPTCommand : CommandHandler {
                 }
             }
         }) {
-            handle(this, this.textInputs["text"]!!.value!!, temperature, role, maxTokens, force, system, model)
+            handle(this, this.textInputs["text"]!!.value!!, temperature, maxTokens, force, system, model)
         }
     }
 
@@ -80,10 +72,9 @@ object ChatGPTCommand : CommandHandler {
         interaction: ActionInteraction,
         text: String,
         temperature: Double,
-        role: String,
         maxTokens: Long,
         force: Boolean,
-        system: String?,
+        system: String,
         modelNullable: String?,
     ) {
         val defer = interaction.deferPublicResponse()
@@ -97,7 +88,7 @@ object ChatGPTCommand : CommandHandler {
             }
         }
 
-        val model = modelNullable ?: conversations[interaction.user.id]?.model ?: "gpt-3.5-turbo"
+        val model = modelNullable ?: "gpt-3.5-turbo"
         val fetchingReaction = ReactionEmoji.Unicode("♻")
         try {
             // Perform access check based on global permission.
@@ -163,84 +154,90 @@ object ChatGPTCommand : CommandHandler {
             } else {
                 null
             }
-            val thisMessage = ContentWithRole(role, text)
-            if (system != null) {
-                conversations.computeIfAbsent(interaction.user.id) { ConversationData(model) }
-                    .conversation.add(ContentWithRole("system", system))
-            }
-            conversations.computeIfAbsent(interaction.user.id) { ConversationData(model) }
-                .conversation.add(thisMessage)
-            if (role == "assistant") {
-                defer.respond {
-                    content = text
-                }
-                return
-            }
-            var content = ""
-            val msg = defer.respond { this.content = "*生成中...*" }
+            val list = mutableListOf<ContentWithRole>()
+            var content = "Input: $text\n\nPrompt: $system\n"
+            val msg = defer.respond { this.content = content }
             if (emoji != null) {
                 msg.message.addReaction(emoji)
             }
             msg.message.addReaction(fetchingReaction)
-            // execute the api
-            Util.createPostEventsFlow(
-                "https://api.openai.com/v1/chat/completions",
-                LinkGitHubCommand.json.encodeToString(
-                    PostBody(
-                        model,
-                        maxTokens.toInt(),
-                        temperature,
-                        conversations[interaction.user.id]!!.conversation,
-                        true,
-                        interaction.user.id.toString(),
-                    )
-                ),
-                mapOf(
-                    "Authorization" to "Bearer ${BotSecretConfig.config.openAIApiKey}",
-                    "Content-Type" to "application/json",
-                ),
-            ).collect {
-                if (it.data == "[DONE]") {
-                    msg.edit {
-                        if (content.length > 2000) {
-                            this.content = null
-                        } else {
+            var currentChain = BotConfig.config.chatChain
+            while (true) {
+                // add conversations
+                if (list.isEmpty()) {
+                    list.add(ContentWithRole("system", system))
+                    list.add(ContentWithRole("user", text))
+                } else {
+                    list.clear()
+                    list.add(ContentWithRole("system", currentChain.prompt))
+                    list.add(ContentWithRole("user", text))
+                    content += "Prompt: ${currentChain.prompt}\n"
+                }
+                content += "Output: "
+                // execute the api
+                var output = ""
+                Util.createPostEventsFlow(
+                    "https://api.openai.com/v1/chat/completions",
+                    LinkGitHubCommand.json.encodeToString(
+                        PostBody(
+                            model,
+                            maxTokens.toInt(),
+                            temperature,
+                            list,
+                            true,
+                            interaction.user.id.toString(),
+                        )
+                    ),
+                    mapOf(
+                        "Authorization" to "Bearer ${BotSecretConfig.config.openAIApiKey}",
+                        "Content-Type" to "application/json",
+                    ),
+                ).collect {
+                    if (it.data == "[DONE]") {
+                        list.add(ContentWithRole("assistant", output))
+                        return@collect
+                    }
+                    val response = LinkGitHubCommand.json.decodeFromString<StreamResponse>(it.data)
+                    output += response.choices[0].delta.content
+                    content += response.choices[0].delta.content
+                    if (System.currentTimeMillis() - (lastUpdated[msg.token] ?: 0) < 500) return@collect
+                    lastUpdated[msg.token] = System.currentTimeMillis()
+                    if (content.length in 1..2000) {
+                        msg.edit {
                             this.content = content
                         }
-                        if (content.length > 4096) {
+                    } else if (content.isNotEmpty()) {
+                        msg.edit {
+                            this.content = null
                             embed {
-                                description = "（生成された文章が4096文字を超えたため、ファイルとして送信します。）"
+                                description = BuildCommand.trimOutput(content, 4096)
                             }
-                        } else if (content.length > 2000) {
-                            embed {
-                                description = content
-                            }
-                        }
-                        ByteArrayInputStream(content.toByteArray()).use { stream ->
-                            addFile("output.md", ChannelProvider { stream.toByteReadChannel() })
                         }
                     }
-                    msg.message.deleteOwnReaction(fetchingReaction)
-                    conversations[interaction.user.id]!!.conversation.add(ContentWithRole("assistant", content))
-                    return@collect
                 }
-                val response = LinkGitHubCommand.json.decodeFromString<StreamResponse>(it.data)
-                content += response.choices[0].delta.content
-                if (System.currentTimeMillis() - (lastUpdated[msg.token] ?: 0) < 500) return@collect
-                lastUpdated[msg.token] = System.currentTimeMillis()
-                if (content.length in 1..2000) {
-                    msg.edit {
-                        this.content = content
+                content += "\n\n"
+                currentChain = currentChain.chain[output.trim('\n', ' ')] ?: break
+            }
+            msg.edit {
+                if (content.length > 2000) {
+                    this.content = null
+                } else {
+                    this.content = content
+                }
+                if (content.length > 4096) {
+                    embed {
+                        description = "（生成された文章が4096文字を超えたため、ファイルとして送信します。）"
                     }
-                } else if (content.isNotEmpty()) {
-                    msg.edit {
-                        this.content = null
-                        embed {
-                            description = BuildCommand.trimOutput(content, 4096)
-                        }
+                } else if (content.length > 2000) {
+                    embed {
+                        description = content
                     }
+                }
+                ByteArrayInputStream(content.toByteArray()).use { stream ->
+                    addFile("output.md", ChannelProvider { stream.toByteReadChannel() })
                 }
             }
+            msg.message.deleteOwnReaction(fetchingReaction)
         } catch (e: Exception) {
             e.printStackTrace()
             defer.respond {
@@ -250,7 +247,7 @@ object ChatGPTCommand : CommandHandler {
     }
 
     override fun register(builder: GlobalMultiApplicationCommandBuilder) {
-        val build: GlobalChatInputCreateBuilder.() -> Unit = {
+        builder.input("chatchain", "ChatGPTを使って文章を生成します。") {
             string("text", "文章を生成するためのテキストを入力してください。") {
                 required = false
             }
@@ -258,11 +255,6 @@ object ChatGPTCommand : CommandHandler {
                 required = false
                 minValue = 0.0
                 maxValue = 1.0
-            }
-            string("role", "文章を生成するためのテキストの役割を指定します。") {
-                required = false
-                choice("ユーザー", "user")
-                choice("アシスタント", "assistant")
             }
             number("max_tokens", "生成する文章の最大文字数を指定します。(100～4000、デフォルト2000)") {
                 required = false
@@ -278,17 +270,11 @@ object ChatGPTCommand : CommandHandler {
                 choice("GPT-4 (8k)", "gpt-4")
                 choice("GPT-4 (32k)", "gpt-4-32k")
             }
-        }
-        builder.input("reply", "ChatGPTを使って文章を生成します。") {
-            build(this)
-        }
-        builder.input("chatgpt", "ChatGPTを使って文章を生成します。") {
-            build(this)
-            string("system", "システムの指示") {
+            string("system-override", "システムの指示") {
                 required = false
                 minLength = 1
             }
-            string("system-preset", "システムの指示のプリセット") {
+            string("system-preset-override", "システムの指示のプリセット") {
                 required = false
                 minLength = 1
                 BotConfig.config.chatgptPresets.keys.forEach { choice(it, it) }
@@ -296,63 +282,3 @@ object ChatGPTCommand : CommandHandler {
         }
     }
 }
-
-@Serializable
-internal data class PostModerationBody(
-    val input: String,
-)
-
-@Serializable
-internal data class PostModerationResponse(
-    val id: String,
-    val model: String,
-    val results: List<PostModerationResponseResults>,
-)
-
-@Serializable
-internal data class PostModerationResponseResults(
-    val flagged: Boolean,
-)
-
-@Serializable
-internal data class PostBody(
-    val model: String,
-    @SerialName("max_tokens")
-    val maxTokens: Int,
-    val temperature: Double,
-    val messages: List<ContentWithRole>,
-    val stream: Boolean,
-    val user: String?,
-)
-
-@Serializable
-internal data class ContentWithRole(val role: String, val content: String)
-
-@Serializable
-internal data class ConversationData(
-    val model: String,
-    val conversation: MutableList<ContentWithRole> = mutableListOf(),
-)
-
-@Serializable
-internal data class StreamResponse(
-    val id: String,
-    val `object`: String,
-    val created: Long,
-    val model: String,
-    val choices: List<StreamResponseChoice>,
-)
-
-@Serializable
-internal data class StreamResponseChoice(
-    val delta: StreamResponseChoiceDelta,
-    val index: Int,
-    @SerialName("finish_reason")
-    val finishReason: String?,
-)
-
-@Serializable
-internal data class StreamResponseChoiceDelta(
-    val content: String = "",
-    val role: String = "assistant",
-)

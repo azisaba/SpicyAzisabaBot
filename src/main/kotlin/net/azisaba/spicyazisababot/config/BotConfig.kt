@@ -66,6 +66,7 @@ data class BotConfig(
             )
         ),
     ),
+    val chatChain: ChatChain = ChatChain("You are a helpful assistant.", mapOf("minecraft" to ChatChain("You are a helpful assistant."))),
 ) {
     companion object {
         private val yaml = Yaml(configuration = YamlConfiguration(encodeDefaults = true, strictMode = false), serializersModule = SerializersModule {
