@@ -4,12 +4,14 @@ package net.azisaba.spicyazisababot
 
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.Kord
+import dev.kord.core.behavior.reply
 import dev.kord.core.behavior.requestMembers
 import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.event.gateway.ReadyEvent
 import dev.kord.core.event.guild.MemberJoinEvent
 import dev.kord.core.event.guild.MemberLeaveEvent
 import dev.kord.core.event.interaction.ApplicationCommandInteractionCreateEvent
+import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.core.on
 import dev.kord.gateway.Intent
 import dev.kord.gateway.Intents
@@ -99,6 +101,15 @@ suspend fun main() {
 
     client.createGlobalApplicationCommands {
         getEnabledCommands().values.distinct().forEach { it.register(this) }
+    }
+
+    client.on<MessageCreateEvent> {
+        if (message.author?.isBot != false) return@on
+        ChatGPTCommand.conversations[message.referencedMessage?.id]?.let { convData ->
+            ChatGPTCommand.handle(message.channel, message.author!!.id, message.content, conversationData = convData) {
+                message.reply { content = it }
+            }
+        }
     }
 
     client.on<ApplicationCommandInteractionCreateEvent> {
