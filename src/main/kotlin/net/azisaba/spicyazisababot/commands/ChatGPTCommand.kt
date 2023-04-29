@@ -2,10 +2,11 @@ package net.azisaba.spicyazisababot.commands
 
 import dev.kord.common.entity.Snowflake
 import dev.kord.common.entity.TextInputStyle
-import dev.kord.core.behavior.interaction.response.edit
+import dev.kord.core.behavior.channel.MessageChannelBehavior
+import dev.kord.core.behavior.edit
 import dev.kord.core.behavior.interaction.response.respond
+import dev.kord.core.entity.Message
 import dev.kord.core.entity.ReactionEmoji
-import dev.kord.core.entity.interaction.ActionInteraction
 import dev.kord.core.entity.interaction.ApplicationCommandInteraction
 import dev.kord.rest.builder.interaction.GlobalChatInputCreateBuilder
 import dev.kord.rest.builder.interaction.GlobalMultiApplicationCommandBuilder
@@ -23,6 +24,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import net.azisaba.spicyazisababot.config.BotConfig
 import net.azisaba.spicyazisababot.config.secret.BotSecretConfig
 import net.azisaba.spicyazisababot.permission.GlobalPermissionNode
@@ -34,9 +36,26 @@ import net.azisaba.spicyazisababot.util.Util.optDouble
 import net.azisaba.spicyazisababot.util.Util.optLong
 import net.azisaba.spicyazisababot.util.Util.optString
 import java.io.ByteArrayInputStream
+import java.io.File
 
 object ChatGPTCommand : CommandHandler {
-    private val conversations = mutableMapOf<Snowflake, ConversationData>() // user id to messages
+    val conversations = mutableMapOf<Snowflake, ConversationData>() // user id or message id to messages
+
+    init {
+        // load conversations
+        try {
+            val text = File("conversations.json").readText()
+            conversations.putAll(Json.decodeFromString<Map<Snowflake, ConversationData>>(text))
+        } catch (ignored: Exception) {}
+    }
+
+    fun saveConversations() {
+        try {
+            val text = Json.encodeToString<Map<Snowflake, ConversationData>>(conversations)
+            File("conversations.json").writeText(text)
+        } catch (ignored: Exception) {}
+    }
+
     private val client = HttpClient(CIO) {
         engine {
             this.requestTimeout = 1000 * 60 * 10
@@ -54,13 +73,17 @@ object ChatGPTCommand : CommandHandler {
         // handle "text" in parameter
         val temperature = interaction.optDouble("temperature") ?: 1.0
         val role = interaction.optString("role") ?: "user"
-        val maxTokens = interaction.optLong("max_tokens") ?: 2000
+        val maxTokens = interaction.optLong("max_tokens")
         val force = interaction.optBoolean("force") ?: false
         val systemPreset = interaction.optString("system-preset")
         val system = BotConfig.config.chatgptPresets[systemPreset] ?: interaction.optString("system")
         val model = interaction.optString("model")
         interaction.optString("text")?.apply {
-            return handle(interaction, this, temperature, role, maxTokens, force, system, model)
+            val defer = interaction.deferPublicResponse()
+            val conversationData = conversations.computeIfAbsent(interaction.user.id) { ConversationData(model ?: "gpt-3.5-turbo") }
+            return handle(interaction.channel, interaction.user.id, this, temperature, role, maxTokens, force, system, model, conversationData) {
+                defer.respond { content = it }.message
+            }
         }
 
         // or ask for text input
@@ -72,75 +95,78 @@ object ChatGPTCommand : CommandHandler {
                 }
             }
         }) {
-            handle(this, this.textInputs["text"]!!.value!!, temperature, role, maxTokens, force, system, model)
+            val defer = deferPublicResponse()
+            val conversationData = conversations.computeIfAbsent(interaction.user.id) { ConversationData(model ?: "gpt-3.5-turbo") }
+            handle(this.channel, this.user.id, this.textInputs["text"]!!.value!!, temperature, role, maxTokens, force, system, model, conversationData) {
+                defer.respond { content = it }.message
+            }
         }
     }
 
-    private suspend fun handle(
-        interaction: ActionInteraction,
+    suspend fun handle(
+        channel: MessageChannelBehavior,
+        userId: Snowflake,
         text: String,
-        temperature: Double,
-        role: String,
-        maxTokens: Long,
-        force: Boolean,
-        system: String?,
-        modelNullable: String?,
+        temperature: Double = 1.0,
+        role: String = "user",
+        maxTokens: Long? = null,
+        force: Boolean = true,
+        system: String? = null,
+        modelNullable: String? = null,
+        conversationData: ConversationData = ConversationData("gpt-3.5-turbo"),
+        respond: suspend (String) -> Message,
     ) {
-        val defer = interaction.deferPublicResponse()
-
         // check if we're running in DMs
-        if (interaction.channel.getGuildOrNull() == null) {
-            val allowedInDM = PermissionManager.globalCheck(interaction.user.id, GlobalPermissionNode.ChatGPTInDM).value ?: false
+        if (channel.getGuildOrNull() == null) {
+            val allowedInDM = PermissionManager.globalCheck(userId, GlobalPermissionNode.ChatGPTInDM).value ?: false
             if (!allowedInDM) {
-                defer.respond { content = "このコマンドを使用する権限がありません。" }
+                respond("このコマンドを使用する権限がありません。")
                 return
             }
         }
 
-        val model = modelNullable ?: conversations[interaction.user.id]?.model ?: "gpt-3.5-turbo"
+        val model = modelNullable ?: conversationData.model
         val fetchingReaction = ReactionEmoji.Unicode("♻")
         try {
             // Perform access check based on global permission.
             // If user has permission of chatgpt.model.all, the user can use all models.
             // Otherwise, the check is performed based on the model. (chatgpt.model.{model})
             val allowAll =
-                PermissionManager.globalCheck(interaction.user.id, GlobalPermissionNode.ChatGPTModelAll).value?.apply {
+                PermissionManager.globalCheck(userId, GlobalPermissionNode.ChatGPTModelAll).value?.apply {
                     if (!this) {
-                        defer.respond { content = "このコマンドを使用する権限がありません。" }
+                        respond("このコマンドを使用する権限がありません。")
                         return
                     }
                 }
             if (allowAll == null) {
                 val node = GlobalPermissionNode.nodeMap["chatgpt.model.$model"]
                 if (node == null) {
-                    defer.respond { content = "このModelを使用する権限がありません。" }
+                    respond("このModelを使用する権限がありません。")
                     return
                 }
-                if (PermissionManager.globalCheck(interaction.user.id, node).value != true) {
-                    defer.respond { content = "このModelを使用する権限がありません。" }
+                if (PermissionManager.globalCheck(userId, node).value != true) {
+                    respond("このModelを使用する権限がありません。")
                     return
                 }
             }
-            interaction.channel.getGuildOrNull()?.let { guild ->
+            channel.getGuildOrNull()?.let { guild ->
                 // Perform access check based on server permission.
                 // If user has permission of chatgpt.model.all, the user can use all models.
                 // Otherwise, the check is performed based on the model. (chatgpt.model.{model})
                 val allowAllOnServer =
-                    PermissionManager.check(guild.getMember(interaction.user.id), "chatgpt.model.all").value?.apply {
+                    PermissionManager.check(guild.getMember(userId), "chatgpt.model.all").value?.apply {
                         if (!this) {
-                            defer.respond { content = "このコマンドを使用する権限がありません。" }
+                            respond("このコマンドを使用する権限がありません。")
                             return
                         }
                     }
                 if (allowAllOnServer != true) {
                     if (PermissionManager.check(
-                            guild.getMember(interaction.user.id),
+                            guild.getMember(userId),
                             "chatgpt.model.$model"
                         ).value != true
                     ) {
-                        defer.respond {
-                            content = "このModelを使用する権限がありません。`chatgpt.model.$model`もしくは`chatgpt.model.all`が必要です。"
-                        }
+                        respond("このModelを使用する権限がありません。`chatgpt.model.$model`もしくは`chatgpt.model.all`が必要です。")
                         return
                     }
                 }
@@ -154,9 +180,8 @@ object ChatGPTCommand : CommandHandler {
             val emoji = if (moderationResponse.results.any { it.flagged }) {
                 // message is flagged
                 if (!force) {
-                    defer.respond {
-                        content = "（入力された文章は不適切と判断されたため、生成されません）"
-                    }.apply { message.addReaction(ReactionEmoji.Unicode("⚠️")) }
+                    respond("（入力された文章は不適切と判断されたため、生成されません）")
+                        .apply { addReaction(ReactionEmoji.Unicode("⚠️")) }
                     return
                 }
                 ReactionEmoji.Unicode("⚠️")
@@ -165,34 +190,30 @@ object ChatGPTCommand : CommandHandler {
             }
             val thisMessage = ContentWithRole(role, text)
             if (system != null) {
-                conversations.computeIfAbsent(interaction.user.id) { ConversationData(model) }
-                    .conversation.add(ContentWithRole("system", system))
+                conversationData.conversation.add(ContentWithRole("system", system))
             }
-            conversations.computeIfAbsent(interaction.user.id) { ConversationData(model) }
-                .conversation.add(thisMessage)
+            conversationData.conversation.add(thisMessage)
             if (role == "assistant") {
-                defer.respond {
-                    content = text
-                }
+                respond(text)
                 return
             }
             var content = ""
-            val msg = defer.respond { this.content = "*生成中...*" }
+            val msg = respond("*生成中...*")
             if (emoji != null) {
-                msg.message.addReaction(emoji)
+                msg.addReaction(emoji)
             }
-            msg.message.addReaction(fetchingReaction)
+            msg.addReaction(fetchingReaction)
             // execute the api
             Util.createPostEventsFlow(
                 "https://api.openai.com/v1/chat/completions",
                 LinkGitHubCommand.json.encodeToString(
                     PostBody(
                         model,
-                        maxTokens.toInt(),
+                        maxTokens?.toInt(),
                         temperature,
-                        conversations[interaction.user.id]!!.conversation,
+                        conversationData.conversation,
                         true,
-                        interaction.user.id.toString(),
+                        userId.toString(),
                     )
                 ),
                 mapOf(
@@ -216,18 +237,23 @@ object ChatGPTCommand : CommandHandler {
                                 description = content
                             }
                         }
-                        ByteArrayInputStream(content.toByteArray()).use { stream ->
-                            addFile("output.md", ChannelProvider { stream.toByteReadChannel() })
+                        if (content.length > 500) {
+                            ByteArrayInputStream(content.toByteArray()).use { stream ->
+                                addFile("output.md", ChannelProvider { stream.toByteReadChannel() })
+                            }
                         }
                     }
-                    msg.message.deleteOwnReaction(fetchingReaction)
-                    conversations[interaction.user.id]!!.conversation.add(ContentWithRole("assistant", content))
+                    msg.deleteOwnReaction(fetchingReaction)
+                    conversationData.conversation.add(ContentWithRole("assistant", content))
+                    conversations[msg.id] = conversationData
+                    conversations[userId] = conversationData
+                    saveConversations()
                     return@collect
                 }
                 val response = LinkGitHubCommand.json.decodeFromString<StreamResponse>(it.data)
                 content += response.choices[0].delta.content
-                if (System.currentTimeMillis() - (lastUpdated[msg.token] ?: 0) < 500) return@collect
-                lastUpdated[msg.token] = System.currentTimeMillis()
+                if (System.currentTimeMillis() - (lastUpdated[msg.id.toString()] ?: 0) < 500) return@collect
+                lastUpdated[msg.id.toString()] = System.currentTimeMillis()
                 if (content.length in 1..2000) {
                     msg.edit {
                         this.content = content
@@ -243,9 +269,7 @@ object ChatGPTCommand : CommandHandler {
             }
         } catch (e: Exception) {
             e.printStackTrace()
-            defer.respond {
-                content = "エラーが発生しました。\n${e.message}"
-            }.message.deleteOwnReaction(fetchingReaction)
+            respond("エラーが発生しました。\n${e.message}").deleteOwnReaction(fetchingReaction)
         }
     }
 
@@ -318,7 +342,7 @@ internal data class PostModerationResponseResults(
 internal data class PostBody(
     val model: String,
     @SerialName("max_tokens")
-    val maxTokens: Int,
+    val maxTokens: Int?,
     val temperature: Double,
     val messages: List<ContentWithRole>,
     val stream: Boolean,
@@ -326,10 +350,10 @@ internal data class PostBody(
 )
 
 @Serializable
-internal data class ContentWithRole(val role: String, val content: String)
+data class ContentWithRole(val role: String, val content: String)
 
 @Serializable
-internal data class ConversationData(
+data class ConversationData(
     val model: String,
     val conversation: MutableList<ContentWithRole> = mutableListOf(),
 )
