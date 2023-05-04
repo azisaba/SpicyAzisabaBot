@@ -70,7 +70,6 @@ object ChatGPTCommand : CommandHandler {
         if (interaction.invokedCommandName != "reply") {
             conversations.remove(interaction.user.id)
         }
-        // handle "text" in parameter
         val temperature = interaction.optDouble("temperature") ?: 1.0
         val role = interaction.optString("role") ?: "user"
         val maxTokens = interaction.optLong("max_tokens")
@@ -78,6 +77,7 @@ object ChatGPTCommand : CommandHandler {
         val systemPreset = interaction.optString("system-preset")
         val system = BotConfig.config.chatgptPresets[systemPreset] ?: interaction.optString("system")
         val model = interaction.optString("model")
+        // handle "text" in parameter
         interaction.optString("text")?.apply {
             val defer = interaction.deferPublicResponse()
             val conversationData = conversations.computeIfAbsent(interaction.user.id) { ConversationData(model ?: "gpt-3.5-turbo") }
