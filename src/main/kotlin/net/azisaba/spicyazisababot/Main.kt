@@ -36,6 +36,7 @@ import net.azisaba.spicyazisababot.commands.CveCommand
 import net.azisaba.spicyazisababot.commands.EditMessageCommand
 import net.azisaba.spicyazisababot.commands.GlobalPermissionsCommand
 import net.azisaba.spicyazisababot.commands.LinkGitHubCommand
+import net.azisaba.spicyazisababot.commands.PeekConversationCommand
 import net.azisaba.spicyazisababot.commands.PermissionsCommand
 import net.azisaba.spicyazisababot.commands.StatsCommand
 import net.azisaba.spicyazisababot.commands.ToDBCommand
@@ -85,6 +86,7 @@ suspend fun main() {
         "cve" to CveCommand,
         "gpedit" to GlobalPermissionsCommand,
         "chatchain" to ChatChainCommand,
+        "peek-conversation" to PeekConversationCommand,
     ) + BotConfig.config.customCommands.associate { it.name to CustomCommand(it) } // custom commands
 
     fun getEnabledCommands(): Map<String, CommandHandler> =
