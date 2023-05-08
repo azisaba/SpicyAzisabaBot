@@ -18,22 +18,12 @@ data class DatabaseConfig(
         setProperty("useSSL", useSSL.toString())
         setProperty("verifyServerCertificate", verifyServerCertificate.toString())
         setProperty("user", username)
-        setProperty("password", password)
+        //setProperty("password", password)
     }
 
-    private fun Properties.toQuery(): String {
-        val sb = StringBuilder("?")
-        var notFirst = false
-        this.forEach { o1: Any?, o2: Any? ->
-            if (notFirst) sb.append('&')
-            sb.append(o1).append("=").append(o2)
-            notFirst = true
-        }
-        return sb.toString()
-    }
+    private fun Properties.toQuery(): String = "?" + this.map { (k, v) -> "$k=$v" }.joinToString("&")
 
-    private fun generateDatabaseURL() =
-        "jdbc:mariadb://$hostname/$name"
+    private fun generateDatabaseURL() = "jdbc:mariadb://$hostname/$name"
 
     fun getConnection(): Connection =
         try {
