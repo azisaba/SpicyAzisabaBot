@@ -246,22 +246,22 @@ object Util {
     fun unProcessTime(l: Long): String {
         var time = l
         var text = ""
-        if (time > day) {
+        if (time >= day) {
             val t = floor(time / day.toDouble()).toLong()
             text += "${t.toInt()}d"
             time -= t * day
         }
-        if (time > hour) {
+        if (time >= hour) {
             val t = floor(time / hour.toDouble()).toLong()
             text += "${t.toInt()}h"
             time -= t * hour
         }
-        if (time > minute) {
+        if (time >= minute) {
             val t = floor(time / minute.toDouble()).toLong()
             text += "${t.toInt()}m"
             time -= t * minute
         }
-        if (time > second) {
+        if (time >= second) {
             val t = floor(time / second.toDouble()).toLong()
             text += "${t.toInt()}s"
             time -= t * second
