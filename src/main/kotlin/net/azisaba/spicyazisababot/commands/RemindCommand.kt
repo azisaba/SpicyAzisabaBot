@@ -38,6 +38,7 @@ class RemindCommand(kord: Kord) : CommandHandler {
         SimpleDateFormat("yyyy/MM/dd"),
         SimpleDateFormat("HH:mm:ss"),
         SimpleDateFormat("HH:mm"),
+        SimpleDateFormat("MM/dd"),
         SimpleDateFormat("MM/dd HH:mm"),
         SimpleDateFormat("MM/dd HH:mm:ss"),
     ).onEach { it.timeZone = TimeZone.getTimeZone(BotConfig.config.remindTimezone) }
@@ -122,7 +123,7 @@ class RemindCommand(kord: Kord) : CommandHandler {
                                     when (index) {
                                         3 -> date.time + currentTime // add time
                                         4, 5 -> date.time + System.currentTimeMillis() - currentTime // add date
-                                        6, 7 -> {
+                                        6, 7, 8 -> {
                                             // Add "<year>/" for prefix and loop again
                                             atUnparsed =
                                                 LocalDateTime.now(ZoneId.of(BotConfig.config.remindTimezone)).year.toString() + "/" + atUnparsed

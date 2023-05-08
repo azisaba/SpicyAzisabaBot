@@ -231,6 +231,7 @@ object Util {
                 time += when (c) {
                     'y' -> (year * rawNumber.toDouble()).toLong()
                     // mo is not here
+                    'w' -> (7 * day * rawNumber.toDouble()).toLong()
                     'd' -> (day * rawNumber.toDouble()).toLong()
                     'h' -> (hour * rawNumber.toDouble()).toLong()
                     'm' -> (minute * rawNumber.toDouble()).toLong()
