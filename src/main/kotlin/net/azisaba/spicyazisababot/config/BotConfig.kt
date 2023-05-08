@@ -32,6 +32,7 @@ data class BotConfig(
     val leaveMessages: List<LeaveMessageConfig> = listOf(LeaveMessageConfig()),
     @YamlComment("/chatgptのsystem-presetで使用できるプリセットを設定します。")
     val chatgptPresets: Map<String, String> = mutableMapOf("assistant" to "You are a helpful assistant."),
+    val remindTimezone: String = "Asia/Tokyo",
     val customCommands: List<CustomCommandDefinition> = listOf(
         CustomCommandDefinition(
             "vote",

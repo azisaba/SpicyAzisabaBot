@@ -29,6 +29,7 @@ import java.util.Timer
 import java.util.TimerTask
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicReference
+import kotlin.math.floor
 import kotlin.reflect.KProperty
 
 object Util {
@@ -91,6 +92,14 @@ object Util {
             ?.values
             ?.toList()
             ?: emptyList()
+
+    fun Interaction.optSubcommand(name: String) =
+        this.data
+            .data
+            .options
+            .value
+            ?.find { it.name == name }
+            ?.values
 
     fun Interaction.optSubCommands(groupName: String, subCommandName: String): SubCommand? =
         this.data
@@ -198,4 +207,65 @@ object Util {
                 }
             }
         }.flowOn(Dispatchers.IO)
+
+    fun processTime(s: String): Long {
+        var time = 0L
+        var rawNumber = ""
+        val reader = StringReader(s)
+        while (!reader.isEOF()) {
+            val c = reader.read(1).first()
+            if (c.isDigit() || c == '.') {
+                rawNumber += c
+            } else {
+                if (rawNumber.isEmpty()) {
+                    throw IllegalArgumentException("Unexpected non-digit character: '$c' at index ${reader.index}")
+                }
+                // mo
+                if (c == 'm' && !reader.isEOF() && reader.peek() == 'o') {
+                    reader.skip(1)
+                    time += month * rawNumber.toLong()
+                    rawNumber = ""
+                    continue
+                }
+                // y(ear), d(ay), h(our), m(inute), s(econd)
+                time += when (c) {
+                    'y' -> (year * rawNumber.toDouble()).toLong()
+                    // mo is not here
+                    'd' -> (day * rawNumber.toDouble()).toLong()
+                    'h' -> (hour * rawNumber.toDouble()).toLong()
+                    'm' -> (minute * rawNumber.toDouble()).toLong()
+                    's' -> (second * rawNumber.toDouble()).toLong()
+                    else -> throw IllegalArgumentException("Unexpected character: '$c' at index ${reader.index}")
+                }
+                rawNumber = ""
+            }
+        }
+        return time
+    }
+
+    fun unProcessTime(l: Long): String {
+        var time = l
+        var text = ""
+        if (time > day) {
+            val t = floor(time / day.toDouble()).toLong()
+            text += "${t.toInt()}d"
+            time -= t * day
+        }
+        if (time > hour) {
+            val t = floor(time / hour.toDouble()).toLong()
+            text += "${t.toInt()}h"
+            time -= t * hour
+        }
+        if (time > minute) {
+            val t = floor(time / minute.toDouble()).toLong()
+            text += "${t.toInt()}m"
+            time -= t * minute
+        }
+        if (time > second) {
+            val t = floor(time / second.toDouble()).toLong()
+            text += "${t.toInt()}s"
+            time -= t * second
+        }
+        return text
+    }
 }

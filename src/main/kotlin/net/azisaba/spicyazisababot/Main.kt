@@ -2,6 +2,7 @@
 
 package net.azisaba.spicyazisababot
 
+import dev.kord.common.entity.AllowedMentionType
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.Kord
 import dev.kord.core.behavior.reply
@@ -12,10 +13,13 @@ import dev.kord.core.event.guild.MemberJoinEvent
 import dev.kord.core.event.guild.MemberLeaveEvent
 import dev.kord.core.event.interaction.ApplicationCommandInteractionCreateEvent
 import dev.kord.core.event.message.MessageCreateEvent
+import dev.kord.core.event.message.ReactionAddEvent
 import dev.kord.core.on
 import dev.kord.gateway.Intent
 import dev.kord.gateway.Intents
 import dev.kord.gateway.PrivilegedIntent
+import dev.kord.rest.builder.message.create.allowedMentions
+import dev.kord.rest.builder.message.create.embed
 import kotlinx.coroutines.flow.toList
 import net.azisaba.spicyazisababot.commands.AddRolesCommand
 import net.azisaba.spicyazisababot.commands.BuildCommand
@@ -38,6 +42,7 @@ import net.azisaba.spicyazisababot.commands.GlobalPermissionsCommand
 import net.azisaba.spicyazisababot.commands.LinkGitHubCommand
 import net.azisaba.spicyazisababot.commands.PeekConversationCommand
 import net.azisaba.spicyazisababot.commands.PermissionsCommand
+import net.azisaba.spicyazisababot.commands.RemindCommand
 import net.azisaba.spicyazisababot.commands.StatsCommand
 import net.azisaba.spicyazisababot.commands.ToDBCommand
 import net.azisaba.spicyazisababot.commands.TranslateRomajiCommand
@@ -59,6 +64,8 @@ suspend fun main() {
 
     // init client
     val client = Kord(BotSecretConfig.config.token)
+
+    val remindCommand = RemindCommand(client)
 
     // builtin commands
     val commands = mapOf(
@@ -87,6 +94,7 @@ suspend fun main() {
         "gpedit" to GlobalPermissionsCommand,
         "chatchain" to ChatChainCommand,
         "peek-conversation" to PeekConversationCommand,
+        "remind" to remindCommand,
     ) + BotConfig.config.customCommands.associate { it.name to CustomCommand(it) } // custom commands
 
     fun getEnabledCommands(): Map<String, CommandHandler> =
@@ -176,13 +184,35 @@ suspend fun main() {
         }
     }
 
+    client.on<ReactionAddEvent> {
+        val guildId = guild?.id?.toString() ?: "@me"
+        val remindData = remindCommand.reminds.find { r -> r.messageLocation.let { it.guildId == guildId && it.channelId == channelId && it.messageId == messageId } } ?: return@on
+        remindCommand.reminds.remove(remindData)
+        val loc = remindData.messageLocation
+        remindCommand.saveReminds()
+        kord.rest.channel.createMessage(channelId) {
+            embed {
+                description = "リマインドをキャンセルしました。\n[メッセージリンク](https://discord.com/channels/${loc.guildId}/${loc.channelId}/${loc.messageId})"
+            }
+            messageReference = loc.messageId
+            allowedMentions {
+                repliedUser = true
+                add(AllowedMentionType.EveryoneMentions)
+                add(AllowedMentionType.RoleMentions)
+                add(AllowedMentionType.UserMentions)
+            }
+        }
+    }
+
     client.login {
         this.intents = Intents(
             Intent.GuildMembers, // privileged
             Intent.GuildMessages,
-            Intent.DirectMessages,
-            Intent.GuildVoiceStates,
+            Intent.GuildMessageReactions,
             Intent.GuildPresences, // privileged
+            Intent.GuildVoiceStates,
+            Intent.DirectMessages,
+            Intent.DirectMessagesReactions,
             Intent.MessageContent, // privileged
         )
     }
