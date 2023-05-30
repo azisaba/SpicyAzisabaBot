@@ -59,6 +59,7 @@ class RemindCommand(kord: Kord) : CommandHandler {
                 if (remindData.every != null) {
                     reminds.add(remindData.copy(at = remindData.at + remindData.every))
                 }
+                saveReminds()
                 kord.launch {
                     kord.rest.channel.createMessage(loc.channelId) {
                         content = "<@${remindData.userId}>"
