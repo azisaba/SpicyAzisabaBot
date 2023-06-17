@@ -288,16 +288,19 @@ object ChatGPTCommand : CommandHandler {
                 choice("ユーザー", "user")
                 choice("アシスタント", "assistant")
             }
-            number("max_tokens", "生成する文章の最大文字数を指定します。(100～4000、デフォルト2000)") {
+            number("max_tokens", "生成する文章の最大トークン数を指定します。(1～1000000)") {
                 required = false
-                minValue = 100.0
-                maxValue = 4000.0
+                minValue = 1.0
+                maxValue = 1000000.0
             }
             boolean("force", "flagされても文章を生成します。") {
                 required = false
             }
             string("model", "モデルを指定します") {
                 choice("GPT-3.5", "gpt-3.5-turbo")
+                choice("GPT-3.5 (16k)", "gpt-3.5-turbo-16k")
+                choice("gpt-3.5-turbo-0613", "gpt-3.5-turbo-0613")
+                choice("gpt-3.5-turbo-16k-0613", "gpt-3.5-turbo-16k-0613")
                 choice("gpt-3.5-turbo-0301", "gpt-3.5-turbo-0301")
                 choice("GPT-4 (8k)", "gpt-4")
                 choice("GPT-4 (32k)", "gpt-4-32k")
