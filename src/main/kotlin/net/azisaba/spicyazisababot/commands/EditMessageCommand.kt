@@ -12,17 +12,17 @@ import dev.kord.core.entity.interaction.ApplicationCommandInteraction
 import dev.kord.core.exception.EntityNotFoundException
 import dev.kord.rest.builder.interaction.GlobalMultiApplicationCommandBuilder
 import dev.kord.rest.builder.interaction.channel
-import dev.kord.rest.builder.interaction.integer
+import dev.kord.rest.builder.interaction.string
 import net.azisaba.spicyazisababot.util.Util.modal
-import net.azisaba.spicyazisababot.util.Util.optLong
 import net.azisaba.spicyazisababot.util.Util.optSnowflake
+import net.azisaba.spicyazisababot.util.Util.optString
 
 object EditMessageCommand : CommandHandler {
     override suspend fun canProcess(interaction: ApplicationCommandInteraction): Boolean = true
 
     override suspend fun handle0(interaction: ApplicationCommandInteraction) {
         val channelId = interaction.optSnowflake("channel")!!
-        val messageId = Snowflake(interaction.optLong("message")!!)
+        val messageId = Snowflake(interaction.optString("message")!!)
         val channel = interaction.channel.getGuildOrNull()!!.getChannel(channelId)
         if (channel !is TopGuildMessageChannel) {
             error("unsupported channel type: ${channel.type}")
@@ -74,10 +74,9 @@ object EditMessageCommand : CommandHandler {
                 required = true
                 channelTypes = CreateMessageCommand.textChannelTypes
             }
-            integer("message", "The message ID") {
+            string("message", "The message ID") {
                 description(Locale.JAPANESE, "メッセージID")
                 required = true
-                minValue = 1L
             }
         }
     }
