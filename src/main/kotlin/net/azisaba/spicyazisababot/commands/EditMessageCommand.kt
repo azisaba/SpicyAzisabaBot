@@ -49,12 +49,12 @@ object EditMessageCommand : CommandHandler {
         }) {
             val content = this.textInputs["message"]!!.value!!
             if (content.isEmpty()) {
-                interaction.respondEphemeral {
+                this.respondEphemeral {
                     this.content = "Message is empty."
                 }
             } else {
                 message.edit { this.content = content }
-                interaction.respondEphemeral {
+                this.respondEphemeral {
                     this.content = "Edited the message."
                 }
             }
