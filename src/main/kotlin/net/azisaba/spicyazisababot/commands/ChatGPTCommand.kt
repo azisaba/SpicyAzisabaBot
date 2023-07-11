@@ -252,7 +252,7 @@ object ChatGPTCommand : CommandHandler {
                 }
                 val response = LinkGitHubCommand.json.decodeFromString<StreamResponse>(it.data)
                 content += response.choices[0].delta.content
-                if (System.currentTimeMillis() - (lastUpdated[msg.id.toString()] ?: 0) < 500) return@collect
+                if (System.currentTimeMillis() - (lastUpdated[msg.id.toString()] ?: 0) < 1000) return@collect
                 lastUpdated[msg.id.toString()] = System.currentTimeMillis()
                 if (content.length in 1..2000) {
                     msg.edit {
