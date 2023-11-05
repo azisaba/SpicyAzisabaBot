@@ -11,12 +11,17 @@ import dev.kord.rest.builder.interaction.subCommand
 import dev.kord.rest.builder.message.create.allowedMentions
 import dev.kord.rest.builder.message.create.embed
 import dev.kord.rest.builder.message.modify.embed
+import io.ktor.client.*
+import io.ktor.client.engine.cio.*
+import io.ktor.client.request.*
+import io.ktor.client.statement.*
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import net.azisaba.spicyazisababot.config.BotConfig
+import net.azisaba.spicyazisababot.config.secret.BotSecretConfig
 import net.azisaba.spicyazisababot.util.Util
 import net.azisaba.spicyazisababot.util.Util.optString
 import net.azisaba.spicyazisababot.util.Util.optSubcommand
@@ -43,6 +48,7 @@ class RemindCommand(kord: Kord) : CommandHandler {
         SimpleDateFormat("MM/dd HH:mm:ss"),
     ).onEach { it.timeZone = TimeZone.getTimeZone(BotConfig.config.remindTimezone) }
     val reminds = mutableListOf<RemindData>()
+    private val client = HttpClient(CIO)
 
     init {
         // load reminds
@@ -93,55 +99,89 @@ class RemindCommand(kord: Kord) : CommandHandler {
         }
     }
 
+    private suspend fun resolveDateTime(userId: Snowflake, text: String?): Long {
+        if (text == null) return System.currentTimeMillis()
+        if (BotSecretConfig.config.openAIApiKey.isBlank()) {
+            return try {
+                System.currentTimeMillis() + Util.processTime(text)
+            } catch (_: IllegalArgumentException) {
+                var newText = text
+                var loopAgain: Boolean
+                var value = -1L
+                do {
+                    loopAgain = false
+                    formats.forEachIndexed { index, format ->
+                        if (value != -1L) return@forEachIndexed
+                        value = try {
+                            val date = format.parse(newText)
+                            val currentTime = System.currentTimeMillis() % 86400000
+                            when (index) {
+                                3 -> date.time + currentTime // add time
+                                4, 5 -> date.time + System.currentTimeMillis() - currentTime // add date
+                                6, 7, 8 -> {
+                                    // Add "<year>/" for prefix and loop again
+                                    newText = LocalDateTime.now(ZoneId.of(BotConfig.config.remindTimezone)).year.toString() + "/" + newText
+                                    loopAgain = true
+                                    -1L
+                                }
+
+                                else -> date.time
+                            }
+                        } catch (_: ParseException) {
+                            -1L
+                        }
+                    }
+                } while (loopAgain)
+                value
+            }
+        }
+        val rawResponse = client.post("https://api.openai.com/v1/chat/completions") {
+            header("Content-Type", "application/json")
+            header("Authorization", "Bearer ${BotSecretConfig.config.openAIApiKey}")
+            setBody(Json.encodeToString(PostBody(
+                "gpt-4",
+                null,
+                0.0,
+                listOf(
+                    ContentWithRole(
+                        "system",
+                        "Please extract the year, month, day, hour, minute, and second from user input." +
+                                "Output in JSON format and each value can be omitted." +
+                                "Example value is as follows: `{\"year\":2023,\"month\":12,\"day\":31,\"hour\":23,\"minute\":59,\"second\":0}`."
+                    ),
+                    ContentWithRole("user", text),
+                ),
+                false,
+                userId.toString(),
+            )))
+        }.bodyAsText()
+        val response = Json.decodeFromString<CompletionResult>(rawResponse)
+        val now = LocalDateTime.now()
+        val dateTime = Json.decodeFromString<DateTime>(response.choices[0].message.content)
+        return DateTime(
+            dateTime.year ?: now.year,
+            dateTime.month ?: now.monthValue,
+            dateTime.day ?: now.dayOfMonth,
+            dateTime.hour ?: now.hour,
+            dateTime.minute ?: now.minute,
+            dateTime.second ?: now.second,
+        ).toLong()
+    }
+
     override suspend fun canProcess(interaction: ApplicationCommandInteraction): Boolean = true
 
     override suspend fun handle0(interaction: ApplicationCommandInteraction) {
         val defer = interaction.deferPublicResponse()
         try {
             interaction.optSubcommand("set")?.apply {
-                var atUnparsed = optString("at")
+                val atUnparsed = optString("at")
                 val every = optString("every")?.let { Util.processTime(it) }
                 val note = optString("note")
                 if (atUnparsed == null && every == null) {
                     defer.respond { content = "`at`もしくは`every`のどちらかを指定する必要があります。" }
                     return
                 }
-                val at = if (atUnparsed == null) {
-                    System.currentTimeMillis()
-                } else {
-                    try {
-                        System.currentTimeMillis() + Util.processTime(atUnparsed)
-                    } catch (_: IllegalArgumentException) {
-                        var loopAgain: Boolean
-                        var value = -1L
-                        do {
-                            loopAgain = false
-                            formats.forEachIndexed { index, format ->
-                                if (value != -1L) return@forEachIndexed
-                                value = try {
-                                    val date = format.parse(atUnparsed)
-                                    val currentTime = System.currentTimeMillis() % 86400000
-                                    when (index) {
-                                        3 -> date.time + currentTime // add time
-                                        4, 5 -> date.time + System.currentTimeMillis() - currentTime // add date
-                                        6, 7, 8 -> {
-                                            // Add "<year>/" for prefix and loop again
-                                            atUnparsed =
-                                                LocalDateTime.now(ZoneId.of(BotConfig.config.remindTimezone)).year.toString() + "/" + atUnparsed
-                                            loopAgain = true
-                                            -1L
-                                        }
-
-                                        else -> date.time
-                                    }
-                                } catch (_: ParseException) {
-                                    -1L
-                                }
-                            }
-                        } while (loopAgain)
-                        value
-                    }
-                }
+                val at = resolveDateTime(interaction.user.id, atUnparsed)
                 if (at < 0) {
                     defer.respond { content = "`at`の値が無効です: `$atUnparsed`" }
                     return
@@ -212,3 +252,24 @@ data class RemindData(
     val every: Long?,
     val note: String?,
 )
+
+@Serializable
+data class DateTime(
+    val year: Int? = null,
+    val month: Int? = null,
+    val day: Int? = null,
+    val hour: Int? = null,
+    val minute: Int? = null,
+    val second: Int? = null,
+) {
+    fun isEmpty() = year == null && month == null && day == null && hour == null && minute == null && second == null
+
+    fun toLong() = LocalDateTime.of(
+        year ?: 0,
+        month ?: 1,
+        day ?: 1,
+        hour ?: 0,
+        minute ?: 0,
+        second ?: 0,
+    ).atZone(ZoneId.of(BotConfig.config.remindTimezone)).toInstant().toEpochMilli()
+}

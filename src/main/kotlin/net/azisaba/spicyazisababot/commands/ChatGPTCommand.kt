@@ -362,6 +362,24 @@ data class ConversationData(
 )
 
 @Serializable
+internal data class CompletionResult(
+    val id: String,
+    val `object`: String,
+    val created: Long,
+    val model: String,
+    val choices: List<CompletionResultChoice>,
+    val usage: Map<String, Int>,
+)
+
+@Serializable
+internal data class CompletionResultChoice(
+    val index: Int,
+    val message: ContentWithRole,
+    @SerialName("finish_reason")
+    val finishReason: String?,
+)
+
+@Serializable
 internal data class StreamResponse(
     val id: String,
     val `object`: String,
