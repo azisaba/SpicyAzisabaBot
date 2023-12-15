@@ -1,7 +1,13 @@
-FROM openjdk:17
+FROM eclipse-temurin:17.0.9_9-jre AS builder
 
 COPY . .
 
 RUN ./gradlew --no-daemon shadowJar
 
-CMD ["java", "-jar", "build/libs/SpicyAzisabaBot.jar"]
+FROM eclipse-temurin:17.0.9_9-jre AS runner
+
+WORKDIR /app
+
+COPY --from=builder build/libs/SpicyAzisabaBot.jar .
+
+CMD ["java", "-jar", "SpicyAzisabaBot.jar"]

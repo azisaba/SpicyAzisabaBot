@@ -47,6 +47,9 @@ object CreateImageCommand : CommandHandler {
                 setBody(LinkGitHubCommand.json.encodeToString(PostModerationBody(prompt)))
                 header("Authorization", "Bearer ${BotSecretConfig.config.openAIApiKey}")
                 header("Content-Type", "application/json")
+                if (BotSecretConfig.config.openAIOrgId != null) {
+                    header("OpenAI-Organization", BotSecretConfig.config.openAIOrgId)
+                }
             }.bodyAsText().let { LinkGitHubCommand.json.decodeFromString(PostModerationResponse.serializer(), it) }
             if (moderationResponse.results.any { it.flagged }) {
                 defer.respond {
@@ -70,6 +73,9 @@ object CreateImageCommand : CommandHandler {
                         )
                         header("Authorization", "Bearer ${BotSecretConfig.config.openAIApiKey}")
                         header("Content-Type", "application/json")
+                        if (BotSecretConfig.config.openAIOrgId != null) {
+                            header("OpenAI-Organization", BotSecretConfig.config.openAIOrgId)
+                        }
                     }
                 } else {
                     val attachmentImage = ImageIO.read(URL(attachment.url))
@@ -87,6 +93,9 @@ object CreateImageCommand : CommandHandler {
                         setBody(MultiPartFormDataContent(formData))
                         header("Authorization", "Bearer ${BotSecretConfig.config.openAIApiKey}")
                         header("Content-Type", "multipart/form-data")
+                        if (BotSecretConfig.config.openAIOrgId != null) {
+                            header("OpenAI-Organization", BotSecretConfig.config.openAIOrgId)
+                        }
                     }
                 }
             val responseAsText = response.bodyAsText()

@@ -176,6 +176,9 @@ object ChatGPTCommand : CommandHandler {
                 setBody(LinkGitHubCommand.json.encodeToString(PostModerationBody(text)))
                 header("Authorization", "Bearer ${BotSecretConfig.config.openAIApiKey}")
                 header("Content-Type", "application/json")
+                if (BotSecretConfig.config.openAIOrgId != null) {
+                    header("OpenAI-Organization", BotSecretConfig.config.openAIOrgId)
+                }
             }.bodyAsText().let { LinkGitHubCommand.json.decodeFromString(PostModerationResponse.serializer(), it) }
             val emoji = if (moderationResponse.results.any { it.flagged }) {
                 // message is flagged
@@ -219,7 +222,7 @@ object ChatGPTCommand : CommandHandler {
                 mapOf(
                     "Authorization" to "Bearer ${BotSecretConfig.config.openAIApiKey}",
                     "Content-Type" to "application/json",
-                ),
+                ) + BotSecretConfig.config.getExtraOpenAIHeaders(),
             ).collect {
                 if (it.data == "[DONE]") {
                     msg.edit {

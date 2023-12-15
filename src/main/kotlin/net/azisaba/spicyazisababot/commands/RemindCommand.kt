@@ -138,6 +138,9 @@ class RemindCommand(kord: Kord) : CommandHandler {
         val rawResponse = client.post("https://api.openai.com/v1/chat/completions") {
             header("Content-Type", "application/json")
             header("Authorization", "Bearer ${BotSecretConfig.config.openAIApiKey}")
+            if (BotSecretConfig.config.openAIOrgId != null) {
+                header("OpenAI-Organization", BotSecretConfig.config.openAIOrgId)
+            }
             setBody(Json.encodeToString(PostBody(
                 "gpt-4",
                 null,

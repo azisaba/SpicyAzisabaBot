@@ -14,6 +14,8 @@ data class BotSecretConfig(
     val token: String = "<enter discord bot token here>",
     @YamlComment("OpenAIのAPIキーを指定します。")
     val openAIApiKey: String = "",
+    @YamlComment("OpenAIの組織ID")
+    val openAIOrgId: String? = null,
     @YamlComment(
         "/build, /custom-buildコマンドでdockerのコンテナを管理するために使用されるDocker APIの場所(ソケットなど)を指定します。",
         "例: tcp://localhost:2375 または unix:///var/run/docker.sock など",
@@ -61,5 +63,11 @@ data class BotSecretConfig(
                 exitProcess(2)
             }
         }
+    }
+
+    fun getExtraOpenAIHeaders(): MutableMap<String, String> {
+        val map = mutableMapOf<String, String>()
+        if (openAIOrgId != null) map["OpenAI-Organization"] = openAIOrgId
+        return map
     }
 }
