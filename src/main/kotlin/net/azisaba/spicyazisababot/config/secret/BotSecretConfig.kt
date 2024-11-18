@@ -45,6 +45,8 @@ data class BotSecretConfig(
         "空の場合は認証を設定しません。",
     )
     val proxyAuthorization: String = "",
+    @YamlComment("attachmentsRootUrlのX-Auth-Keyヘッダーを指定します")
+    val attachmentsSecret: String = "",
     val database: DatabaseConfig = DatabaseConfig(),
 ) {
     companion object {

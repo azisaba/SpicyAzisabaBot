@@ -22,8 +22,11 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import net.azisaba.spicyazisababot.config.BotConfig
 import net.azisaba.spicyazisababot.config.secret.BotSecretConfig
+import java.io.InputStream
 import java.net.HttpURLConnection
+import java.net.URI
 import java.net.URL
 import java.util.Timer
 import java.util.TimerTask
@@ -268,5 +271,29 @@ object Util {
             time -= t * second
         }
         return text
+    }
+
+    fun uploadAttachment(name: String, stream: InputStream) {
+        val url = URI("${BotConfig.config.attachmentsRootUrl}/$name").toURL()
+        val conn = url.openConnection() as HttpURLConnection
+        conn.requestMethod = "PUT"
+        conn.setRequestProperty("X-Auth-Key", BotSecretConfig.config.attachmentsSecret)
+        conn.doOutput = true
+        stream.use { conn.outputStream.write(it.readBytes()) }
+        if (conn.responseCode !in 200..299) {
+            error("Failed to upload attachment: ${conn.responseCode} ${conn.responseMessage}")
+        }
+        conn.disconnect()
+    }
+
+    fun deleteAttachment(name: String) {
+        val url = URI("${BotConfig.config.attachmentsRootUrl}/$name").toURL()
+        val conn = url.openConnection() as HttpURLConnection
+        conn.requestMethod = "DELETE"
+        conn.setRequestProperty("X-Auth-Key", BotSecretConfig.config.attachmentsSecret)
+        if (conn.responseCode !in 200..299) {
+            error("Failed to delete attachment: ${conn.responseCode} ${conn.responseMessage}")
+        }
+        conn.disconnect()
     }
 }

@@ -28,6 +28,7 @@ import net.azisaba.spicyazisababot.commands.ChatGPTCommand
 import net.azisaba.spicyazisababot.commands.CheckGitHubCommand
 import net.azisaba.spicyazisababot.commands.CleanUserMessagesCommand
 import net.azisaba.spicyazisababot.commands.CommandHandler
+import net.azisaba.spicyazisababot.commands.ConvertAttachmentsTableCommand
 import net.azisaba.spicyazisababot.commands.CopyTableCommand
 import net.azisaba.spicyazisababot.commands.CountRoleMembersCommand
 import net.azisaba.spicyazisababot.commands.CreateAttachmentsTableCommand
@@ -95,6 +96,7 @@ suspend fun main() {
         "chatchain" to ChatChainCommand,
         "peek-conversation" to PeekConversationCommand,
         "remind" to remindCommand,
+        "convert-attachments-table" to ConvertAttachmentsTableCommand,
     ) + BotConfig.config.customCommands.associate { it.name to CustomCommand(it) } // custom commands
 
     fun getEnabledCommands(): Map<String, CommandHandler> =

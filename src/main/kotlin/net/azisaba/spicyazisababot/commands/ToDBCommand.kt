@@ -19,6 +19,7 @@ import dev.kord.rest.builder.interaction.GlobalMultiApplicationCommandBuilder
 import dev.kord.rest.builder.interaction.boolean
 import dev.kord.rest.builder.interaction.channel
 import dev.kord.rest.builder.interaction.string
+import net.azisaba.spicyazisababot.config.BotConfig
 import net.azisaba.spicyazisababot.util.Util
 import net.azisaba.spicyazisababot.util.Util.optAny
 import net.azisaba.spicyazisababot.util.Util.optSnowflake
@@ -28,6 +29,7 @@ import org.mariadb.jdbc.MariaDbBlob
 import java.net.HttpURLConnection
 import java.net.URL
 import java.time.Instant
+import java.util.UUID
 
 object ToDBCommand : CommandHandler {
     override suspend fun canProcess(interaction: ApplicationCommandInteraction): Boolean = true
@@ -130,22 +132,23 @@ object ToDBCommand : CommandHandler {
                 deleteStatement.setObject(1, attachment.id.toString())
                 deleteStatement.executeUpdate()
                 deleteStatement.close()
+                val fileName = "${collectedMessage.id}-${attachment.id}-${attachment.filename}"
                 val attachmentStatement = connection.prepareStatement("INSERT INTO `attachments` VALUES (?, ?, ?, ?, ?)")
                 attachmentStatement.setObject(1, collectedMessage.id.toString())
                 attachmentStatement.setObject(2, attachment.id.toString())
-                attachmentStatement.setObject(3, attachment.url)
+                attachmentStatement.setObject(3, "${BotConfig.config.attachmentsRootUrl}/$fileName")
                 attachmentStatement.setObject(4, attachment.proxyUrl)
                 attachmentStatement.setObject(5, attachment.isSpoiler)
-//                val conn = URL(attachment.url).openConnection()
-//                conn.setRequestProperty("User-Agent", "SpicyAzisabaBot/main https://github.com/azisaba/SpicyAzisabaBot")
-//                conn.connect()
-//                if (conn is HttpURLConnection && conn.responseCode != 200) {
-//                    error("Unexpected response code: ${conn.responseCode} (${conn.responseMessage})")
-//                }
-//                conn.getInputStream().use { input ->
-//                    attachmentStatement.setBlob(6, MariaDbBlob(input.readBytes()))
-//                }
-//                if (conn is HttpURLConnection) conn.disconnect()
+                val conn = URL(attachment.url).openConnection()
+                conn.setRequestProperty("User-Agent", "SpicyAzisabaBot/main https://github.com/azisaba/SpicyAzisabaBot")
+                conn.connect()
+                if (conn is HttpURLConnection && conn.responseCode != 200) {
+                    error("Unexpected response code: ${conn.responseCode} (${conn.responseMessage})")
+                }
+                conn.getInputStream().use { input ->
+                    Util.uploadAttachment(fileName, input)
+                }
+                if (conn is HttpURLConnection) conn.disconnect()
                 attachmentStatement.executeUpdate()
                 attachmentStatement.close()
             }
