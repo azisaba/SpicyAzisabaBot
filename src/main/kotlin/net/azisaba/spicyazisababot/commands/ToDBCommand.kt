@@ -130,22 +130,22 @@ object ToDBCommand : CommandHandler {
                 deleteStatement.setObject(1, attachment.id.toString())
                 deleteStatement.executeUpdate()
                 deleteStatement.close()
-                val attachmentStatement = connection.prepareStatement("INSERT INTO `attachments` VALUES (?, ?, ?, ?, ?, ?)")
+                val attachmentStatement = connection.prepareStatement("INSERT INTO `attachments` VALUES (?, ?, ?, ?, ?)")
                 attachmentStatement.setObject(1, collectedMessage.id.toString())
                 attachmentStatement.setObject(2, attachment.id.toString())
                 attachmentStatement.setObject(3, attachment.url)
                 attachmentStatement.setObject(4, attachment.proxyUrl)
                 attachmentStatement.setObject(5, attachment.isSpoiler)
-                val conn = URL(attachment.url).openConnection()
-                conn.setRequestProperty("User-Agent", "SpicyAzisabaBot/main https://github.com/azisaba/SpicyAzisabaBot")
-                conn.connect()
-                if (conn is HttpURLConnection && conn.responseCode != 200) {
-                    error("Unexpected response code: ${conn.responseCode} (${conn.responseMessage})")
-                }
-                conn.getInputStream().use { input ->
-                    attachmentStatement.setBlob(6, MariaDbBlob(input.readBytes()))
-                }
-                if (conn is HttpURLConnection) conn.disconnect()
+//                val conn = URL(attachment.url).openConnection()
+//                conn.setRequestProperty("User-Agent", "SpicyAzisabaBot/main https://github.com/azisaba/SpicyAzisabaBot")
+//                conn.connect()
+//                if (conn is HttpURLConnection && conn.responseCode != 200) {
+//                    error("Unexpected response code: ${conn.responseCode} (${conn.responseMessage})")
+//                }
+//                conn.getInputStream().use { input ->
+//                    attachmentStatement.setBlob(6, MariaDbBlob(input.readBytes()))
+//                }
+//                if (conn is HttpURLConnection) conn.disconnect()
                 attachmentStatement.executeUpdate()
                 attachmentStatement.close()
             }
