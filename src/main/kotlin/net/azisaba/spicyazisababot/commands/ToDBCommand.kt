@@ -49,7 +49,12 @@ object ToDBCommand : CommandHandler {
                             val data = rs.getBlob("data")
                             if (data != null) {
                                 println("Uploading attachment $messageId-$attachmentId-$fileName")
-                                Util.uploadAttachment("$messageId-$attachmentId-$fileName", data.binaryStream)
+                                try {
+                                    Util.uploadAttachment("$messageId-$attachmentId-$fileName", data.binaryStream)
+                                } catch (e: Exception) {
+                                    println("Failed to upload attachment $messageId-$attachmentId-$fileName")
+                                    e.printStackTrace()
+                                }
                                 uploaded += "$messageId-$attachmentId-$fileName"
                                 println("Uploaded attachment $messageId-$attachmentId-$fileName")
                             }
