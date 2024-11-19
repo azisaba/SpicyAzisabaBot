@@ -39,56 +39,34 @@ object ToDBCommand : CommandHandler {
         if (table == "abcdef") {
             val uploaded = mutableListOf<String>()
             Util.getConnection().use { connection ->
-                connection.prepareStatement("SELECT * FROM `attachments`").use { stmt ->
-                    stmt.executeQuery().use { rs ->
+                val fetchStart = System.currentTimeMillis()
+                connection.createStatement().use { stmt ->
+                    stmt.executeQuery("SELECT `message_id`, `attachment_id`, `url` FROM `attachments` WHERE `url` LIKE 'https://cdn.discord%'").use { rs ->
                         while (rs.next()) {
                             val messageId = rs.getString("message_id")
                             val attachmentId = rs.getString("attachment_id")
-                            val url = rs.getString("url")
-                            val fileName = url.substringAfterLast("/")
-                            val data = rs.getBlob("data")
-                            if (data != null) {
-                                println("Uploading attachment $messageId-$attachmentId-$fileName")
-                                try {
-                                    Util.uploadAttachment("$messageId-$attachmentId-$fileName", data.binaryStream)
-                                } catch (e: Exception) {
-                                    println("Failed to upload attachment $messageId-$attachmentId-$fileName")
-                                    e.printStackTrace()
-                                }
-                                uploaded += "$messageId-$attachmentId-$fileName"
-                                println("Uploaded attachment $messageId-$attachmentId-$fileName")
-                            }
+                            val fileName = rs.getString("url").substringAfterLast("/")
+                            uploaded += "$messageId-$attachmentId-$fileName"
                         }
                     }
                 }
-            }
-            println("Uploaded attachments:")
-            println(uploaded.joinToString("\n"))
-            Util.getConnection().use { connection ->
+                println("Fetched ${uploaded.size} attachments in ${System.currentTimeMillis() - fetchStart} ms")
                 val updateStart = System.currentTimeMillis()
-                connection.prepareStatement("UPDATE `attachments` SET `data` = NULL").use { stmt ->
-                    stmt.executeUpdate()
-                }
-                println("Updated attachments in ${System.currentTimeMillis() - updateStart} ms")
-                val optimizeStart = System.currentTimeMillis()
-                connection.createStatement().use {
-                    stmt -> stmt.executeUpdate("OPTIMIZE TABLE `attachments`")
-                }
-                println("Optimized attachments table in ${System.currentTimeMillis() - optimizeStart} ms")
-                val list = uploaded.map {
+                uploaded.forEachIndexed { index, it ->
                     val split = it.split("-")
                     val messageId = split[0]
                     val attachmentId = split[1]
                     val fileName = split[2]
-                    return@map "UPDATE `attachments` SET `url` = '${BotConfig.config.attachmentsRootUrl}/$messageId-$attachmentId-$fileName' WHERE `message_id` = '$messageId' AND `attachment_id` = '$attachmentId'"
-                }
-                list.forEachIndexed { index, sql ->
                     val start = System.currentTimeMillis()
-                    connection.createStatement().use { stmt ->
-                        stmt.executeUpdate(sql)
+                    connection.prepareStatement("UPDATE `attachments` SET `url` = ? WHERE `message_id` = ? AND `attachment_id` = '?'").use { stmt ->
+                        stmt.setString(1, "${BotConfig.config.attachmentsRootUrl}/$messageId-$attachmentId-$fileName")
+                        stmt.setString(2, messageId)
+                        stmt.setString(3, attachmentId)
+                        stmt.executeUpdate()
                     }
-                    println("Executed SQL in ${System.currentTimeMillis() - start} ms (${index + 1} / ${list.size})")
+                    println("Updated attachment $messageId-$attachmentId-$fileName (${index + 1} / ${uploaded.size}) in ${System.currentTimeMillis() - start} ms")
                 }
+                println("Updated ${uploaded.size} attachments in ${System.currentTimeMillis() - updateStart} ms")
             }
             return
         }
