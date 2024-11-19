@@ -130,7 +130,7 @@ object ToDBCommand : CommandHandler {
                 deleteStatement.executeUpdate()
                 deleteStatement.close()
                 val fileName = "${collectedMessage.id}-${attachment.id}-${attachment.filename}"
-                val attachmentStatement = connection.prepareStatement("INSERT INTO `attachments` VALUES (?, ?, ?, ?, ?)")
+                val attachmentStatement = connection.prepareStatement("INSERT INTO `attachments` VALUES (?, ?, ?, ?, ?, NULL)")
                 attachmentStatement.setObject(1, collectedMessage.id.toString())
                 attachmentStatement.setObject(2, attachment.id.toString())
                 attachmentStatement.setObject(3, "${BotConfig.config.attachmentsRootUrl}/$fileName")
