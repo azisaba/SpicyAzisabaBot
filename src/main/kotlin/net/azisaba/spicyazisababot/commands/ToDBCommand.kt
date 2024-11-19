@@ -4,6 +4,7 @@ import dev.kord.common.Locale
 import dev.kord.common.entity.MessageType
 import dev.kord.common.entity.Permission
 import dev.kord.common.entity.Permissions
+import dev.kord.common.entity.optional.optional
 import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.behavior.edit
 import dev.kord.core.behavior.interaction.respondEphemeral
@@ -100,7 +101,7 @@ object ToDBCommand : CommandHandler {
             statement.setObject(5, authorData.bot.orElse(false)) // author_is_bot
             statement.setObject(6, authorData.id.toString()) // author_id
             statement.setObject(7, authorData.username) // author_name
-            statement.setObject(8, authorData.discriminator) // author_discriminator
+            statement.setObject(8, authorData.discriminator.value ?: "0") // author_discriminator
             statement.setObject(9, collectedMessage.id.toString())
             statement.setObject(10, collectedMessage.content) // content
             statement.setBoolean(11, collectedMessage.editedTimestamp != null) // edited
