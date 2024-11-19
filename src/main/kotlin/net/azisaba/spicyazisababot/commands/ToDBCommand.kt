@@ -37,8 +37,9 @@ object ToDBCommand : CommandHandler {
     override suspend fun handle0(interaction: ApplicationCommandInteraction) {
         val table = interaction.optString("table")!!
         if (table == "abcdef") {
+            val uploaded = mutableListOf<String>()
             Util.getConnection().use { connection ->
-                connection.prepareStatement("SELECT * FROM `attachments`").use { stmt ->
+                connection.prepareStatement("SELECT * FROM `attachments` WHERE `data` != NULL").use { stmt ->
                     stmt.executeQuery().use { rs ->
                         while (rs.next()) {
                             val messageId = rs.getString("message_id")
@@ -46,17 +47,40 @@ object ToDBCommand : CommandHandler {
                             val url = rs.getString("url")
                             val fileName = url.substringAfterLast("/")
                             val data = rs.getBlob("data")
-                            println("Converting attachment $messageId-$attachmentId-$fileName")
+                            println("Uploading attachment $messageId-$attachmentId-$fileName")
                             Util.uploadAttachment("$messageId-$attachmentId-$fileName", data.binaryStream)
-                            connection.prepareStatement("UPDATE `attachments` SET `data` = NULL, `url` = ? WHERE `message_id` = ? AND `attachment_id` = ?").use { updateStmt ->
-                                updateStmt.setString(1, "${BotConfig.config.attachmentsRootUrl}/$messageId-$attachmentId-$fileName")
-                                updateStmt.setString(2, messageId)
-                                updateStmt.setString(3, attachmentId)
-                                updateStmt.executeUpdate()
-                            }
-                            println("Converted attachment $messageId-$attachmentId-$fileName")
+                            uploaded += "$messageId-$attachmentId-$fileName"
+                            println("Uploaded attachment $messageId-$attachmentId-$fileName")
                         }
                     }
+                }
+            }
+            println("Uploaded attachments:")
+            println(uploaded.joinToString("\n"))
+            Util.getConnection().use { connection ->
+                val updateStart = System.currentTimeMillis()
+                connection.prepareStatement("UPDATE `attachments` SET `data` = NULL WHERE `data` != NULL").use { stmt ->
+                    stmt.executeUpdate()
+                }
+                println("Updated attachments in ${System.currentTimeMillis() - updateStart} ms")
+                val optimizeStart = System.currentTimeMillis()
+                connection.createStatement().use {
+                    stmt -> stmt.executeUpdate("OPTIMIZE TABLE `attachments`")
+                }
+                println("Optimized attachments table in ${System.currentTimeMillis() - optimizeStart} ms")
+                val list = uploaded.map {
+                    val split = it.split("-")
+                    val messageId = split[0]
+                    val attachmentId = split[1]
+                    val fileName = split[2]
+                    return@map "UPDATE `attachments` SET `url` = '${BotConfig.config.attachmentsRootUrl}/$messageId-$attachmentId-$fileName' WHERE `message_id` = '$messageId' AND `attachment_id` = '$attachmentId'"
+                }
+                list.forEachIndexed { index, sql ->
+                    val start = System.currentTimeMillis()
+                    connection.createStatement().use { stmt ->
+                        stmt.executeUpdate(sql)
+                    }
+                    println("Executed SQL in ${System.currentTimeMillis() - start} ms (${index + 1} / ${list.size})")
                 }
             }
             return
