@@ -66,7 +66,7 @@ object EditMessageCommand : CommandHandler {
             description(Locale.JAPANESE, "メッセージを編集")
 
             dmPermission = false
-            defaultMemberPermissions = Permissions(Permission.ViewChannel.code + Permission.ReadMessageHistory.code + Permission.ManageMessages.code)
+            defaultMemberPermissions = Permissions.Builder(Permission.ViewChannel.code + Permission.ReadMessageHistory.code + Permission.ManageMessages.code).build()
 
             channel("channel", "The channel where the message is located") {
                 description(Locale.JAPANESE, "メッセージがあるチャンネル")

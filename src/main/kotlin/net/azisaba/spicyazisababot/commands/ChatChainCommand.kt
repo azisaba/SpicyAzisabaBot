@@ -10,9 +10,9 @@ import dev.kord.rest.builder.interaction.GlobalMultiApplicationCommandBuilder
 import dev.kord.rest.builder.interaction.boolean
 import dev.kord.rest.builder.interaction.number
 import dev.kord.rest.builder.interaction.string
-import dev.kord.rest.builder.message.modify.embed
+import dev.kord.rest.builder.message.embed
 import io.ktor.client.*
-import io.ktor.client.engine.cio.*
+import io.ktor.client.engine.okhttp.*
 import io.ktor.client.request.*
 import io.ktor.client.request.forms.*
 import io.ktor.client.statement.*
@@ -32,11 +32,7 @@ import net.azisaba.spicyazisababot.util.Util.optString
 import java.io.ByteArrayInputStream
 
 object ChatChainCommand : CommandHandler {
-    private val client = HttpClient(CIO) {
-        engine {
-            this.requestTimeout = 1000 * 60 * 10
-        }
-    }
+    private val client = HttpClient(OkHttp)
     private val lastUpdated = mutableMapOf<String, Long>()
 
     override suspend fun canProcess(interaction: ApplicationCommandInteraction): Boolean = true

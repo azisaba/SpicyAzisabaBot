@@ -8,7 +8,7 @@ import dev.kord.rest.builder.interaction.attachment
 import dev.kord.rest.builder.interaction.number
 import dev.kord.rest.builder.interaction.string
 import io.ktor.client.*
-import io.ktor.client.engine.cio.*
+import io.ktor.client.engine.okhttp.*
 import io.ktor.client.request.*
 import io.ktor.client.request.forms.*
 import io.ktor.client.statement.*
@@ -28,11 +28,7 @@ import java.net.URL
 import javax.imageio.ImageIO
 
 object CreateImageCommand : CommandHandler {
-    private val client = HttpClient(CIO) {
-        engine {
-            this.requestTimeout = 1000 * 60 * 10
-        }
-    }
+    private val client = HttpClient(OkHttp)
 
     override suspend fun canProcess(interaction: ApplicationCommandInteraction): Boolean = true
 

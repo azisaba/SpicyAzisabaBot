@@ -124,7 +124,7 @@ object BuildCommand : CommandHandler {
         output += "[SpicyAzisabaBot] Artifact glob: $artifactGlob\n"
         output += "[SpicyAzisabaBot] URL: $url\n"
         output += "[SpicyAzisabaBot] Timeout: $timeout minutes\n"
-        kordLogger.info("Initial build output:\n$output")
+        println("Initial build output:\n$output")
         val (output2, repoDir) = try {
             cloneRepository(output, url)
         } catch (e: Exception) {

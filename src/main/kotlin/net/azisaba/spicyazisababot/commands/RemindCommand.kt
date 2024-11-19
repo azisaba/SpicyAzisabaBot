@@ -8,11 +8,10 @@ import dev.kord.core.entity.interaction.ApplicationCommandInteraction
 import dev.kord.rest.builder.interaction.GlobalMultiApplicationCommandBuilder
 import dev.kord.rest.builder.interaction.string
 import dev.kord.rest.builder.interaction.subCommand
-import dev.kord.rest.builder.message.create.allowedMentions
-import dev.kord.rest.builder.message.create.embed
-import dev.kord.rest.builder.message.modify.embed
+import dev.kord.rest.builder.message.allowedMentions
+import dev.kord.rest.builder.message.embed
 import io.ktor.client.*
-import io.ktor.client.engine.cio.*
+import io.ktor.client.engine.okhttp.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import kotlinx.coroutines.launch
@@ -48,7 +47,7 @@ class RemindCommand(kord: Kord) : CommandHandler {
         SimpleDateFormat("MM/dd HH:mm:ss"),
     ).onEach { it.timeZone = TimeZone.getTimeZone(BotConfig.config.remindTimezone) }
     val reminds = mutableListOf<RemindData>()
-    private val client = HttpClient(CIO)
+    private val client = HttpClient(OkHttp)
 
     init {
         // load reminds

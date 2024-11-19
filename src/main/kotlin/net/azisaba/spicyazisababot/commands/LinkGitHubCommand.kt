@@ -7,15 +7,14 @@ import dev.kord.core.behavior.interaction.response.edit
 import dev.kord.core.behavior.interaction.response.respond
 import dev.kord.core.entity.interaction.ApplicationCommandInteraction
 import dev.kord.rest.builder.interaction.GlobalMultiApplicationCommandBuilder
-import dev.kord.rest.builder.message.create.allowedMentions
+import dev.kord.rest.builder.message.allowedMentions
 import io.ktor.client.*
 import io.ktor.client.engine.*
-import io.ktor.client.engine.cio.*
+import io.ktor.client.engine.okhttp.*
 import io.ktor.client.plugins.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import net.azisaba.spicyazisababot.GitHubUser
 import net.azisaba.spicyazisababot.config.secret.BotSecretConfig
@@ -26,7 +25,7 @@ import java.util.Timer
 object LinkGitHubCommand : CommandHandler {
     private val timer = Timer()
     internal val json = Json { ignoreUnknownKeys = true }
-    private val client = HttpClient(CIO) {
+    private val client = HttpClient(OkHttp) {
         val proxyUrl = BotSecretConfig.config.proxyUrl
         val proxyAuthorization = BotSecretConfig.config.proxyAuthorization
 

@@ -29,7 +29,7 @@ object CountRoleMembersCommand : CommandHandler {
             description(Locale.JAPANESE, "ロールを持っているメンバーの数を表示")
 
             dmPermission = false
-            defaultMemberPermissions = Permissions(Permission.ManageRoles.code)
+            defaultMemberPermissions = Permissions.Builder(Permission.ManageRoles.code).build()
 
             role("role", "The role") {
                 name(Locale.JAPANESE, "ロール")

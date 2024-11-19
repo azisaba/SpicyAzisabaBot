@@ -30,7 +30,7 @@ object AddRolesCommand : CommandHandler {
             description(Locale.JAPANESE, "ロールを持っているメンバーにロールを付与")
 
             dmPermission = false
-            defaultMemberPermissions = Permissions(Permission.ManageRoles.code)
+            defaultMemberPermissions = Permissions.Builder(Permission.ManageRoles.code).build()
 
             role("from", "Members to add roles to") {
                 description(Locale.JAPANESE, "ロールを付与するメンバー")

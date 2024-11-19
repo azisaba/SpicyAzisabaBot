@@ -7,7 +7,7 @@ import dev.kord.core.behavior.requestMembers
 import dev.kord.core.entity.interaction.ApplicationCommandInteraction
 import dev.kord.gateway.PrivilegedIntent
 import dev.kord.rest.builder.interaction.GlobalMultiApplicationCommandBuilder
-import dev.kord.rest.builder.message.create.embed
+import dev.kord.rest.builder.message.embed
 import kotlinx.coroutines.flow.toList
 
 object StatsCommand : CommandHandler {
@@ -47,8 +47,13 @@ object StatsCommand : CommandHandler {
                     val texts = channels.count { it.type == ChannelType.GuildText || it.type == ChannelType.GuildNews }
                     val voices =
                         channels.count { it.type == ChannelType.GuildVoice || it.type == ChannelType.GuildStageVoice }
-                    val ctv = categories + texts + voices
-                    "C+T+V $ctv / カテゴリ $categories / テキスト $texts / ボイス $voices"
+                    val others =
+                        channels.count { it.type != ChannelType.GuildCategory
+                                && it.type != ChannelType.GuildText && it.type != ChannelType.GuildNews
+                                && it.type != ChannelType.GuildVoice && it.type != ChannelType.GuildStageVoice
+                        }
+                    val ctv = categories + texts + voices + others
+                    "C+T+V $ctv / カテゴリ $categories / テキスト $texts / ボイス $voices / その他 $others"
                 }
             }
         }

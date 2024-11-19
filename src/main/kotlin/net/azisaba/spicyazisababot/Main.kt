@@ -18,8 +18,8 @@ import dev.kord.core.on
 import dev.kord.gateway.Intent
 import dev.kord.gateway.Intents
 import dev.kord.gateway.PrivilegedIntent
-import dev.kord.rest.builder.message.create.allowedMentions
-import dev.kord.rest.builder.message.create.embed
+import dev.kord.rest.builder.message.allowedMentions
+import dev.kord.rest.builder.message.embed
 import kotlinx.coroutines.flow.toList
 import net.azisaba.spicyazisababot.commands.AddRolesCommand
 import net.azisaba.spicyazisababot.commands.BuildCommand

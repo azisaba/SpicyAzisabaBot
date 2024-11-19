@@ -5,7 +5,7 @@ import dev.kord.core.behavior.interaction.response.DeferredMessageInteractionRes
 import dev.kord.core.behavior.interaction.response.respond
 import dev.kord.core.entity.interaction.ApplicationCommandInteraction
 import dev.kord.rest.builder.message.EmbedBuilder
-import dev.kord.rest.builder.message.modify.embed
+import dev.kord.rest.builder.message.embed
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
