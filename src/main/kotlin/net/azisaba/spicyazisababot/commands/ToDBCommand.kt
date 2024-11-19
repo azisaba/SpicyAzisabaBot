@@ -39,7 +39,7 @@ object ToDBCommand : CommandHandler {
         if (table == "abcdef") {
             val uploaded = mutableListOf<String>()
             Util.getConnection().use { connection ->
-                connection.prepareStatement("SELECT * FROM `attachments` WHERE `data` != NULL").use { stmt ->
+                connection.prepareStatement("SELECT * FROM `attachments`").use { stmt ->
                     stmt.executeQuery().use { rs ->
                         while (rs.next()) {
                             val messageId = rs.getString("message_id")
@@ -47,10 +47,12 @@ object ToDBCommand : CommandHandler {
                             val url = rs.getString("url")
                             val fileName = url.substringAfterLast("/")
                             val data = rs.getBlob("data")
-                            println("Uploading attachment $messageId-$attachmentId-$fileName")
-                            Util.uploadAttachment("$messageId-$attachmentId-$fileName", data.binaryStream)
-                            uploaded += "$messageId-$attachmentId-$fileName"
-                            println("Uploaded attachment $messageId-$attachmentId-$fileName")
+                            if (data != null) {
+                                println("Uploading attachment $messageId-$attachmentId-$fileName")
+                                Util.uploadAttachment("$messageId-$attachmentId-$fileName", data.binaryStream)
+                                uploaded += "$messageId-$attachmentId-$fileName"
+                                println("Uploaded attachment $messageId-$attachmentId-$fileName")
+                            }
                         }
                     }
                 }
@@ -59,7 +61,7 @@ object ToDBCommand : CommandHandler {
             println(uploaded.joinToString("\n"))
             Util.getConnection().use { connection ->
                 val updateStart = System.currentTimeMillis()
-                connection.prepareStatement("UPDATE `attachments` SET `data` = NULL WHERE `data` != NULL").use { stmt ->
+                connection.prepareStatement("UPDATE `attachments` SET `data` = NULL").use { stmt ->
                     stmt.executeUpdate()
                 }
                 println("Updated attachments in ${System.currentTimeMillis() - updateStart} ms")
