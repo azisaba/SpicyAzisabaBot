@@ -8,7 +8,6 @@ import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.behavior.edit
 import dev.kord.core.behavior.interaction.respondEphemeral
 import dev.kord.core.behavior.interaction.respondPublic
-import dev.kord.core.behavior.interaction.response.PublicMessageInteractionResponseBehavior
 import dev.kord.core.behavior.interaction.response.edit
 import dev.kord.core.entity.Message
 import dev.kord.core.entity.channel.GuildMessageChannel
@@ -25,51 +24,15 @@ import net.azisaba.spicyazisababot.util.Util.optAny
 import net.azisaba.spicyazisababot.util.Util.optSnowflake
 import net.azisaba.spicyazisababot.util.Util.optString
 import net.azisaba.spicyazisababot.util.Util.validateTable
-import org.mariadb.jdbc.MariaDbBlob
 import java.net.HttpURLConnection
 import java.net.URL
 import java.time.Instant
-import java.util.UUID
 
 object ToDBCommand : CommandHandler {
     override suspend fun canProcess(interaction: ApplicationCommandInteraction): Boolean = true
 
     override suspend fun handle0(interaction: ApplicationCommandInteraction) {
         val table = interaction.optString("table")!!
-        if (table == "abcdef") {
-            val uploaded = mutableListOf<String>()
-            Util.getConnection().use { connection ->
-                val fetchStart = System.currentTimeMillis()
-                connection.createStatement().use { stmt ->
-                    stmt.executeQuery("SELECT `message_id`, `attachment_id`, `url` FROM `attachments` WHERE `url` LIKE 'https://cdn.discord%'").use { rs ->
-                        while (rs.next()) {
-                            val messageId = rs.getString("message_id")
-                            val attachmentId = rs.getString("attachment_id")
-                            val fileName = rs.getString("url").substringAfterLast("/")
-                            uploaded += "$messageId-$attachmentId-$fileName"
-                        }
-                    }
-                }
-                println("Fetched ${uploaded.size} attachments in ${System.currentTimeMillis() - fetchStart} ms")
-                val updateStart = System.currentTimeMillis()
-                uploaded.forEachIndexed { index, it ->
-                    val split = it.split("-")
-                    val messageId = split[0]
-                    val attachmentId = split[1]
-                    val fileName = split[2]
-                    val start = System.currentTimeMillis()
-                    connection.prepareStatement("UPDATE `attachments` SET `url` = ? WHERE `message_id` = ? AND `attachment_id` = '?'").use { stmt ->
-                        stmt.setString(1, "${BotConfig.config.attachmentsRootUrl}/$messageId-$attachmentId-$fileName")
-                        stmt.setString(2, messageId)
-                        stmt.setString(3, attachmentId)
-                        stmt.executeUpdate()
-                    }
-                    println("Updated attachment $messageId-$attachmentId-$fileName (${index + 1} / ${uploaded.size}) in ${System.currentTimeMillis() - start} ms")
-                }
-                println("Updated ${uploaded.size} attachments in ${System.currentTimeMillis() - updateStart} ms")
-            }
-            return
-        }
         if (!table.validateTable()) {
             interaction.respondEphemeral { content = "Invalid table name" }
             return
