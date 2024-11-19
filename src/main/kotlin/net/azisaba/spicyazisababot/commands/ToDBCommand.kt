@@ -9,6 +9,7 @@ import dev.kord.core.behavior.edit
 import dev.kord.core.behavior.interaction.respondEphemeral
 import dev.kord.core.behavior.interaction.respondPublic
 import dev.kord.core.behavior.interaction.response.edit
+import dev.kord.core.behavior.interaction.response.respond
 import dev.kord.core.entity.Message
 import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.core.entity.channel.TopGuildMessageChannel
@@ -32,6 +33,7 @@ object ToDBCommand : CommandHandler {
     override suspend fun canProcess(interaction: ApplicationCommandInteraction): Boolean = true
 
     override suspend fun handle0(interaction: ApplicationCommandInteraction) {
+        val defer = interaction.deferPublicResponse()
         val table = interaction.optString("table")!!
         if (!table.validateTable()) {
             interaction.respondEphemeral { content = "Invalid table name" }
@@ -47,12 +49,12 @@ object ToDBCommand : CommandHandler {
         val topGuildChannel = if (channel is ThreadChannel) channel.getParent() else channel as TopGuildMessageChannel
         if (!topGuildChannel.getEffectivePermissions(interaction.user.id)
                 .contains(Permissions(Permission.ViewChannel, Permission.ReadMessageHistory))) {
-            interaction.respondEphemeral {
-                content = "You don't have permission to read message history in that channel."
+            defer.respond {
+                content = "あなたにメッセージ履歴の表示の権限がありません。"
             }
             return
         }
-        val msg = interaction.respondPublic { content = "メッセージをデータベースにコピー中..." }
+        val msg = defer.respond { content = "メッセージをデータベースにコピー中..." }
         var followupMessage: Message? = null
         val startedAt = Instant.now().epochSecond
         var lastEditMessageAttempt = 0L
