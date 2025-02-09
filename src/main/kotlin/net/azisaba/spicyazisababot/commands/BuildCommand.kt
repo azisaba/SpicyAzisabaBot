@@ -26,6 +26,7 @@ import org.kohsuke.github.GitHub
 import org.mariadb.jdbc.MariaDbBlob
 import java.io.File
 import java.nio.file.FileSystems
+import java.util.*
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
@@ -180,47 +181,47 @@ object BuildCommand : CommandHandler {
                 .timeout(timeout, TimeUnit.MINUTES)
                 .isArtifact(artifactPredicate)
                 .let { GravenBuilder(it) }
-                .buildOn(repoDir, 17, projectType)
+                .buildOn(repoDir, 21, projectType)
             // upload build log
             Util.getConnection().use { connection ->
                 val artifactUrls = artifacts.map { file ->
                     output += "[SpicyAzisabaBot] Uploading artifact ${file.absolutePath}\n"
                     val artifactAttachmentId = "gb${System.currentTimeMillis()}-${counter.getAndIncrement()}"
-                    val artifactFileName = file.name
-                    if (file.length() > 1024 * 1024 * 100) {
-                        output += "[SpicyAzisabaBot] Skipping large artifact (>100MB): ${file.absolutePath}\n"
-                        return@map null
-                    }
+                    val artifactFileName = "${UUID.randomUUID()}-${file.name}"
                     val artifactUrl =
                         "${BotConfig.config.messageViewerBaseUrl}/attachments/$artifactAttachmentId/$artifactFileName"
                     val insertArtifact =
-                        connection.prepareStatement("INSERT INTO `attachments` VALUES (?, ?, ?, ?, ?, ?)")
+                        connection.prepareStatement("INSERT INTO `attachments` VALUES (?, ?, ?, ?, ?, NULL)")
                     insertArtifact.setString(1, "0") // message id
                     insertArtifact.setString(2, artifactAttachmentId)
-                    insertArtifact.setString(3, artifactFileName)
-                    insertArtifact.setString(4, artifactFileName)
+                    insertArtifact.setString(3, "${BotConfig.config.attachmentsRootUrl}/$artifactFileName")
+                    insertArtifact.setString(4, "${BotConfig.config.attachmentsRootUrl}/$artifactFileName")
                     insertArtifact.setBoolean(5, false)
-                    insertArtifact.setBlob(6, MariaDbBlob(file.readBytes()))
                     insertArtifact.executeUpdate()
                     insertArtifact.close()
+                    file.inputStream().use { stream ->
+                        Util.uploadAttachment(artifactFileName, stream)
+                    }
                     output += "[SpicyAzisabaBot] Uploaded artifact: $artifactUrl\n"
                     return@map artifactUrl
-                }.filterNotNull()
+                }
                 output += "[SpicyAzisabaBot] Completed build & upload in ${(System.currentTimeMillis() - startedAt) / 1000}s\n"
                 output += "[SpicyAzisabaBot] Uploading build log\n"
                 val buildLogAttachmentId = "gb${System.currentTimeMillis()}-${counter.getAndIncrement()}"
-                val buildLogFileName = "_build-log.txt"
+                val buildLogFileName = "${UUID.randomUUID()}-build-log.txt"
                 val buildLogUrl =
                     "${BotConfig.config.messageViewerBaseUrl}/attachments/$buildLogAttachmentId/$buildLogFileName"
-                val insertBuildLog = connection.prepareStatement("INSERT INTO `attachments` VALUES (?, ?, ?, ?, ?, ?)")
+                val insertBuildLog = connection.prepareStatement("INSERT INTO `attachments` VALUES (?, ?, ?, ?, ?, NULL)")
                 insertBuildLog.setString(1, "0") // message id
                 insertBuildLog.setString(2, buildLogAttachmentId)
-                insertBuildLog.setString(3, buildLogFileName)
-                insertBuildLog.setString(4, buildLogFileName)
+                insertBuildLog.setString(3, "${BotConfig.config.attachmentsRootUrl}/$buildLogFileName")
+                insertBuildLog.setString(4, "${BotConfig.config.attachmentsRootUrl}/$buildLogFileName")
                 insertBuildLog.setBoolean(5, false)
-                insertBuildLog.setBlob(6, MariaDbBlob(output.toByteArray()))
                 insertBuildLog.executeUpdate()
                 insertBuildLog.close()
+                output.byteInputStream().use { stream ->
+                    Util.uploadAttachment(buildLogFileName, stream)
+                }
                 val artifactUrlsInContent = when (artifactUrls.size) {
                     1 -> "\nファイル: ${artifactUrls[0]}"
                     2 -> "\nファイル:\n- ${artifactUrls[0]}\n- ${artifactUrls[1]}"

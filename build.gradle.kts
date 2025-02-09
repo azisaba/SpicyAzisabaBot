@@ -9,7 +9,7 @@ version = "2.0.0"
 
 repositories {
     mavenCentral()
-    maven { url = uri("https://jitpack.io/") }
+    maven { url = uri("https://repo.azisaba.net/repository/maven-public/") }
 }
 
 java.toolchain.languageVersion.set(JavaLanguageVersion.of(17))
@@ -18,7 +18,7 @@ dependencies {
     implementation("dev.kord:kord-core:0.15.0")
     implementation("org.slf4j:slf4j-simple:2.0.0")
     implementation("org.mariadb.jdbc:mariadb-java-client:3.0.6")
-    implementation("com.github.AzisabaNetwork:GravenBuilder:6d03d0aae6")
+    implementation("net.azisaba:GravenBuilder:1.1.2-SNAPSHOT")
     implementation("org.eclipse.jgit:org.eclipse.jgit:6.2.0.202206071550-r")
     implementation("org.kohsuke:github-api:1.308")
     implementation("com.charleskorn.kaml:kaml:0.65.0")
